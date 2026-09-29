@@ -1,7 +1,7 @@
 {
   "name": "pedro-momentos-google-drive",
   "private": true,
-  "version": "2.2.0",
+  "version": "3.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,7 +10,8 @@
     "check": "node scripts/check.mjs"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.58.0"
+    "@supabase/supabase-js": "^2.58.0",
+    "qrcode": "^1.5.4"
   },
   "devDependencies": {
     "vite": "^7.1.7"

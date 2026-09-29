@@ -270,18 +270,63 @@ export async function findCompletedUploadFile(accessToken, { folderId, ownerId, 
   return Array.isArray(data.files) ? data.files : [];
 }
 
-export async function ensureAnyoneReader(accessToken, fileId) {
+export async function removeAnyoneReader(accessToken, fileId) {
   const listResponse = await driveFetch(`/files/${encodeURIComponent(fileId)}/permissions?fields=permissions(id,type,role)`, accessToken);
   const list = await listResponse.json();
-  const exists = (list.permissions || []).some(permission => permission.type === "anyone" && permission.role === "reader");
-  if (exists) return;
-  await driveFetch(`/files/${encodeURIComponent(fileId)}/permissions`, accessToken, {
-    method: "POST",
-    headers: { "Content-Type": "application/json; charset=UTF-8" },
-    body: JSON.stringify({ type: "anyone", role: "reader" }),
-  });
+  const publicPermissions = (list.permissions || []).filter(permission => permission.type === "anyone");
+  for (const permission of publicPermissions) {
+    try {
+      await driveFetch(`/files/${encodeURIComponent(fileId)}/permissions/${encodeURIComponent(permission.id)}`, accessToken, {
+        method: "DELETE",
+      });
+    } catch (error) {
+      if (error.statusCode !== 404) throw error;
+    }
+  }
+  return publicPermissions.length;
+}
+
+export async function deleteDriveFile(accessToken, fileId) {
+  try {
+    await driveFetch(`/files/${encodeURIComponent(fileId)}`, accessToken, { method: "DELETE" });
+    return true;
+  } catch (error) {
+    if (error.statusCode === 404) return false;
+    throw error;
+  }
 }
 
 export async function fetchDriveMedia(accessToken, fileId) {
   return driveFetch(`/files/${encodeURIComponent(fileId)}?alt=media`, accessToken);
+}
+
+export async function fetchDriveMediaRange(accessToken, fileId, start, end) {
+  return driveFetch(`/files/${encodeURIComponent(fileId)}?alt=media`, accessToken, {
+    headers: { Range: `bytes=${start}-${end}` },
+  });
+}
+
+export async function listAppFilesCreatedBefore(accessToken, isoDate) {
+  const files = [];
+  let pageToken = "";
+  do {
+    const q = [
+      "trashed = false",
+      `createdTime < '${escapeDriveQueryValue(isoDate)}'`,
+      `appProperties has { key='app_id' and value='pedro_momentos' }`,
+    ].join(" and ");
+    const params = new URLSearchParams({
+      q,
+      spaces: "drive",
+      pageSize: "1000",
+      orderBy: "createdTime asc",
+      fields: "nextPageToken,files(id,name,size,createdTime,parents,appProperties,trashed)",
+    });
+    if (pageToken) params.set("pageToken", pageToken);
+    const response = await driveFetch(`/files?${params.toString()}`, accessToken);
+    const data = await response.json();
+    files.push(...(data.files || []));
+    pageToken = String(data.nextPageToken || "");
+  } while (pageToken);
+  return files;
 }

@@ -3,7 +3,7 @@ import { getAccessToken } from "./supabase.js";
 import { fileStem, safeFilename, wait } from "./utils.js";
 
 const PREVIEW_TYPE = "image/jpeg";
-const UPLOAD_DRAFTS_KEY = "pedro_momentos_upload_drafts_v1";
+const UPLOAD_DRAFTS_KEY = "pedro_momentos_upload_drafts_v2";
 const UPLOAD_DRAFT_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
 function fileFingerprint(file) {
@@ -17,7 +17,7 @@ function fileFingerprint(file) {
 
 function readUploadDrafts() {
   try {
-    const parsed = JSON.parse(sessionStorage.getItem(UPLOAD_DRAFTS_KEY) || "{}");
+    const parsed = JSON.parse(localStorage.getItem(UPLOAD_DRAFTS_KEY) || "{}");
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
     const now = Date.now();
     const fresh = {};
@@ -34,9 +34,9 @@ function readUploadDrafts() {
 
 function writeUploadDrafts(drafts) {
   try {
-    sessionStorage.setItem(UPLOAD_DRAFTS_KEY, JSON.stringify(drafts));
+    localStorage.setItem(UPLOAD_DRAFTS_KEY, JSON.stringify(drafts));
   } catch {
-    // Se o navegador bloquear sessionStorage, a proteção em memória/servidor continua funcionando.
+    // Se o navegador bloquear localStorage, a proteção do servidor continua funcionando.
   }
 }
 
@@ -52,7 +52,6 @@ function getOrCreateUploadGroupId(file) {
 
   const uploadGroupId = crypto.randomUUID();
   drafts[key] = { uploadGroupId, updatedAt: Date.now() };
-
   const trimmed = Object.fromEntries(
     Object.entries(drafts)
       .sort((a, b) => Number(b[1]?.updatedAt || 0) - Number(a[1]?.updatedAt || 0))
@@ -62,7 +61,7 @@ function getOrCreateUploadGroupId(file) {
   return uploadGroupId;
 }
 
-function clearUploadDraft(file) {
+export function clearUploadRecovery(file) {
   const key = fileFingerprint(file);
   const drafts = readUploadDrafts();
   if (!(key in drafts)) return;
@@ -211,21 +210,17 @@ async function proxyUploadRequest(sessionUrl, { body = null, contentType = "appl
       headers,
       body,
     });
-  } catch (error) {
+  } catch {
     throw new Error("Não foi possível alcançar o servidor de upload. Verifique sua conexão e tente novamente.");
   }
 
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw new Error(data.error || `Falha no envio (${response.status}).`);
-  }
+  if (!response.ok) throw new Error(data.error || `Falha no envio (${response.status}).`);
   return data;
 }
 
 async function queryUploadOffset(sessionUrl, total) {
-  const result = await proxyUploadRequest(sessionUrl, {
-    contentRange: `bytes */${total}`,
-  });
+  const result = await proxyUploadRequest(sessionUrl, { contentRange: `bytes */${total}` });
   if (result.complete) return { complete: true, metadata: result.metadata };
   return { complete: false, next: Number.isInteger(result.next) ? result.next : 0 };
 }
@@ -236,6 +231,7 @@ export async function uploadFileResumable(sessionUrl, file, onProgress) {
   const total = file.size;
 
   while (offset < total) {
+    if (!navigator.onLine) throw new Error("Você está sem conexão. Quando a internet voltar, toque em publicar novamente.");
     const end = Math.min(total, offset + config.uploadChunkBytes);
     const chunk = file.slice(offset, end);
 
@@ -256,7 +252,7 @@ export async function uploadFileResumable(sessionUrl, file, onProgress) {
       onProgress?.(Math.min(0.99, offset / total));
     } catch (error) {
       retryCount += 1;
-      if (retryCount > 4) throw error;
+      if (retryCount > 4 || !navigator.onLine) throw error;
       await wait(500 * 2 ** (retryCount - 1));
       const status = await queryUploadOffset(sessionUrl, total);
       if (status.complete) return status.metadata;
@@ -279,8 +275,6 @@ async function uploadOrReuse(session, file, onProgress) {
 }
 
 export async function uploadPhotoToDrive(file, displayName, onProgress) {
-  // O mesmo arquivo mantém o mesmo grupo enquanto a publicação não termina.
-  // Assim, uma nova tentativa reaproveita o que já chegou ao Drive.
   const uploadGroupId = getOrCreateUploadGroupId(file);
 
   onProgress?.({ label: "Preparando a prévia…", value: 0.03 });
@@ -325,7 +319,6 @@ export async function uploadPhotoToDrive(file, displayName, onProgress) {
     }),
   });
 
-  clearUploadDraft(file);
   onProgress?.({ label: "Publicado!", value: 1 });
   return {
     ...published.photo,
@@ -333,7 +326,44 @@ export async function uploadPhotoToDrive(file, displayName, onProgress) {
   };
 }
 
-export async function getOriginalViewUrl(photoId) {
-  const data = await apiFetch(`/api/original-link?photo=${encodeURIComponent(photoId)}`, { method: "GET" });
-  return data.url;
+function extensionFromMime(mimeType) {
+  if (mimeType === "image/png") return "png";
+  if (mimeType === "image/webp") return "webp";
+  if (mimeType === "image/heic" || mimeType === "image/heif") return "heic";
+  return "jpg";
+}
+
+export async function downloadOriginalPhoto(photo, onProgress) {
+  if (!photo?.id || !photo?.size_bytes) throw new Error("Dados da foto original indisponíveis.");
+  const total = Number(photo.size_bytes);
+  if (!Number.isFinite(total) || total <= 0 || total > config.maxPhotoBytes) throw new Error("Tamanho da foto inválido.");
+
+  const token = await getAccessToken();
+  const chunks = [];
+  let offset = 0;
+
+  while (offset < total) {
+    const end = Math.min(total - 1, offset + config.downloadChunkBytes - 1);
+    const response = await fetch(`/api/original-chunk?photo=${encodeURIComponent(photo.id)}&start=${offset}&end=${end}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      throw new Error(data.error || `Falha ao baixar a foto (${response.status}).`);
+    }
+    const blob = await response.blob();
+    if (!blob.size) throw new Error("O servidor devolveu um bloco vazio da foto.");
+    chunks.push(blob);
+    offset += blob.size;
+    onProgress?.(Math.min(1, offset / total));
+  }
+
+  const mimeType = photo.mime_type || chunks[0]?.type || "image/jpeg";
+  const finalBlob = new Blob(chunks, { type: mimeType });
+  const base = String(photo.original_name || `pedro-momentos-${photo.id.slice(0, 8)}`)
+    .replace(/\.[^.]+$/, "")
+    .replace(/[^a-zA-Z0-9-_ ]+/g, "-")
+    .trim() || `pedro-momentos-${photo.id.slice(0, 8)}`;
+  const filename = `${base}.${extensionFromMime(mimeType)}`;
+  return { blob: finalBlob, filename };
 }

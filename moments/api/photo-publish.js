@@ -1,4 +1,4 @@
-import { ensureAnyoneReader, ensureDriveFolders, getDriveAccessToken, getDriveFile } from "./_lib/google-drive.js";
+import { ensureDriveFolders, getDriveAccessToken, getDriveFile } from "./_lib/google-drive.js";
 import { handleError, json, methodNotAllowed, readJson } from "./_lib/http.js";
 import { getAdminSupabase, requireUser } from "./_lib/supabase-admin.js";
 
@@ -19,6 +19,8 @@ function verifyFile(file, { userId, uploadGroupId, kind, folderId }) {
   );
 }
 
+const PUBLIC_FIELDS = "id,user_id,display_name,original_name,mime_type,size_bytes,width,height,likes_count,created_at";
+
 export default async function handler(req, res) {
   if (req.method !== "POST") return methodNotAllowed(res, ["POST"]);
   try {
@@ -34,7 +36,7 @@ export default async function handler(req, res) {
     const supabase = getAdminSupabase();
     const { data: existing, error: existingError } = await supabase
       .from("photos")
-      .select("id,user_id,display_name,mime_type,size_bytes,width,height,likes_count,created_at")
+      .select(PUBLIC_FIELDS)
       .eq("upload_group_id", uploadGroupId)
       .maybeSingle();
     if (existingError) throw existingError;
@@ -47,7 +49,7 @@ export default async function handler(req, res) {
 
     const accessToken = await getDriveAccessToken();
     const folders = await ensureDriveFolders(accessToken);
-    let [original, preview] = await Promise.all([
+    const [original, preview] = await Promise.all([
       getDriveFile(accessToken, originalFileId),
       getDriveFile(accessToken, previewFileId),
     ]);
@@ -65,9 +67,6 @@ export default async function handler(req, res) {
       const error = new Error("Arquivos de upload inválidos."); error.statusCode = 400; throw error;
     }
 
-    await ensureAnyoneReader(accessToken, original.id);
-    original = await getDriveFile(accessToken, original.id);
-
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("display_name")
@@ -84,8 +83,7 @@ export default async function handler(req, res) {
       upload_group_id: uploadGroupId,
       original_drive_id: original.id,
       preview_drive_id: preview.id,
-      original_web_view_url: original.webViewLink || null,
-      original_web_content_url: original.webContentLink || null,
+      original_name: original.name || null,
       mime_type: original.mimeType || "application/octet-stream",
       size_bytes: originalSize,
       preview_size_bytes: previewSize,
@@ -97,14 +95,14 @@ export default async function handler(req, res) {
     const { data: inserted, error: insertError } = await supabase
       .from("photos")
       .insert(row)
-      .select("id,user_id,display_name,mime_type,size_bytes,width,height,likes_count,created_at")
+      .select(PUBLIC_FIELDS)
       .single();
 
     if (insertError) {
       if (insertError.code === "23505") {
         const { data: retry, error: retryError } = await supabase
           .from("photos")
-          .select("id,user_id,display_name,mime_type,size_bytes,width,height,likes_count,created_at")
+          .select(PUBLIC_FIELDS)
           .eq("upload_group_id", uploadGroupId)
           .single();
         if (retryError) throw retryError;

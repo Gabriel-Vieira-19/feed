@@ -12,9 +12,7 @@ export function getSupabase() {
         autoRefreshToken: true,
         detectSessionInUrl: false,
       },
-      realtime: {
-        params: { eventsPerSecond: 10 },
-      },
+      realtime: { params: { eventsPerSecond: 10 } },
     });
   }
   return client;
@@ -39,14 +37,9 @@ export async function ensureAnonymousSession(displayName) {
 }
 
 export async function saveProfile(userId, displayName) {
-  const supabase = getSupabase();
   const cleanName = normalizeName(displayName);
-  const { error } = await supabase.from("profiles").upsert(
-    {
-      id: userId,
-      display_name: cleanName,
-      updated_at: new Date().toISOString(),
-    },
+  const { error } = await getSupabase().from("profiles").upsert(
+    { id: userId, display_name: cleanName, updated_at: new Date().toISOString() },
     { onConflict: "id" },
   );
   if (error) throw error;
@@ -71,23 +64,36 @@ export async function getAccessToken() {
 }
 
 function withPreviewUrl(photo) {
-  return {
-    ...photo,
-    preview_url: `/api/media?photo=${encodeURIComponent(photo.id)}`,
-  };
+  return { ...photo, preview_url: `/api/media?photo=${encodeURIComponent(photo.id)}` };
 }
 
-export async function fetchFeed({ before = null, limit = config.feedPageSize, userId = null } = {}) {
+function applySort(query, sort) {
+  switch (sort) {
+    case "oldest":
+      return query.order("created_at", { ascending: true }).order("id", { ascending: true });
+    case "most_liked":
+      return query.order("likes_count", { ascending: false }).order("created_at", { ascending: false });
+    case "least_liked":
+      return query.order("likes_count", { ascending: true }).order("created_at", { ascending: false });
+    case "user_az":
+      return query.order("display_name", { ascending: true }).order("created_at", { ascending: false });
+    case "user_za":
+      return query.order("display_name", { ascending: false }).order("created_at", { ascending: false });
+    case "newest":
+    default:
+      return query.order("created_at", { ascending: false }).order("id", { ascending: false });
+  }
+}
+
+export async function fetchFeed({ offset = 0, limit = config.feedPageSize, userId = null, sort = "newest" } = {}) {
   const supabase = getSupabase();
   let query = supabase
     .from("photos")
-    .select("id,user_id,display_name,mime_type,size_bytes,width,height,likes_count,created_at")
-    .eq("published", true)
-    .order("created_at", { ascending: false })
-    .limit(limit);
+    .select("id,user_id,display_name,original_name,mime_type,size_bytes,width,height,likes_count,created_at")
+    .eq("published", true);
 
-  if (before) query = query.lt("created_at", before);
   if (userId) query = query.eq("user_id", userId);
+  query = applySort(query, sort).range(offset, offset + limit - 1);
 
   const { data: photos, error } = await query;
   if (error) throw error;
@@ -124,7 +130,7 @@ export function subscribeToPhotoChanges(onChange) {
     .channel("party-feed")
     .on(
       "postgres_changes",
-      { event: "INSERT", schema: "public", table: "photos" },
+      { event: "*", schema: "public", table: "photos" },
       payload => {
         if (payload.new?.id) payload.new.preview_url = `/api/media?photo=${encodeURIComponent(payload.new.id)}`;
         onChange(payload);

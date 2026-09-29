@@ -56,9 +56,15 @@ const required = [
   "api/drive-upload-session.js",
   "api/photo-publish.js",
   "api/media.js",
-  "api/original-link.js",
+  "api/original-chunk.js",
+  "api/admin-dashboard.js",
+  "api/admin-photo-action.js",
+  "api/admin-private-originals.js",
+  "api/cleanup-abandoned.js",
   "supabase/schema.sql",
   "src/lib/drive.js",
+  "src/lib/pending-upload.js",
+  "supabase/upgrade_v2_2_to_final.sql",
 ];
 for (const item of required) if (!fs.existsSync(path.join(root, item))) errors.push(`Arquivo obrigatório ausente: ${item}`);
 

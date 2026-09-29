@@ -48,3 +48,17 @@ export function handleError(res, error, fallback = "Erro interno.") {
   console.error(error);
   return json(res, status, { error: message });
 }
+
+export function requireCronOrAdmin(req) {
+  const adminExpected = String(process.env.ADMIN_KEY || "");
+  const adminReceived = String(req.headers["x-admin-key"] || "");
+  if (adminExpected && adminReceived && adminReceived === adminExpected) return "admin";
+
+  const cronExpected = String(process.env.CRON_SECRET || "");
+  const bearer = getBearerToken(req);
+  if (cronExpected && bearer && bearer === cronExpected) return "cron";
+
+  const error = new Error("Acesso administrativo inválido.");
+  error.statusCode = 401;
+  throw error;
+}

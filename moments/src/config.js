@@ -11,6 +11,7 @@ export const config = Object.freeze({
   refreshIntervalMs: 30_000,
   previewMaxBytes: 2 * 1024 * 1024,
   uploadChunkBytes: 3 * 1024 * 1024,
+  downloadChunkBytes: 3 * 1024 * 1024,
 });
 
 export function assertPublicConfig() {
