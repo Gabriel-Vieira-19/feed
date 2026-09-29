@@ -141,13 +141,22 @@ a { color: inherit; }
 .modal-close { position:absolute; top:8px; right:8px; width:44px; height:44px; border-radius:50%; border:1px solid rgba(255,255,255,.16); background:rgba(7,26,51,.78); color:white; font-size:1.4rem; z-index:2; }
 .modal-loading { color:var(--muted); text-align:center; }
 
+.modal-actions {
+  width: min(100%, 560px);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+@media (max-width: 520px) {
+  .modal-actions { grid-template-columns: 1fr; }
+}
+
 .admin-layout { min-height:100svh; padding:24px; display:grid; place-items:center; }
 .admin-card h1 { font-family:"Lora",serif; font-weight:500; }
 .admin-actions { display:grid; gap:10px; margin-top:18px; }
 .admin-status { margin-top:18px; padding:14px; border:1px solid var(--line); border-radius:14px; color:var(--muted); font-size:.78rem; line-height:1.6; word-break:break-word; }
-.terabox-frame-wrap { margin-top:18px; display:none; }
-.terabox-frame-wrap.show { display:block; }
-.terabox-frame { width:100%; height:min(660px,72svh); border:1px solid var(--line); border-radius:16px; background:white; }
 
 @media (min-width: 680px) {
   .main-content { padding:14px 18px 30px; }
@@ -171,7 +180,7 @@ a { color: inherit; }
   *, *::before, *::after { scroll-behavior:auto !important; animation-duration:.001ms !important; transition-duration:.001ms !important; }
 }
 
-/* Prévia TeraBox ainda em processamento */
+/* Estado de erro/carregamento da prévia */
 .thumbnail-pending {
   position: absolute;
   inset: 0;

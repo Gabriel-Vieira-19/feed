@@ -1,6 +1,6 @@
--- Pedro 18 — Momentos
--- Execute este arquivo UMA VEZ no SQL Editor do Supabase.
--- O aplicativo usa usuários anônimos do Supabase Auth.
+-- Pedro 18 — Momentos / Google Drive
+-- Execute UMA VEZ em um projeto Supabase novo.
+-- Antes: Authentication > Providers > Anonymous Sign-Ins = ON.
 
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
@@ -13,12 +13,14 @@ create table if not exists public.photos (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
   display_name text not null check (char_length(display_name) between 2 and 40),
-  tera_fs_id text not null unique,
-  tera_path text not null unique,
-  preview_url text,
-  preview_refreshed_at timestamptz,
+  upload_group_id uuid not null unique,
+  original_drive_id text not null unique,
+  preview_drive_id text not null unique,
+  original_web_view_url text,
+  original_web_content_url text,
   mime_type text not null,
   size_bytes bigint not null check (size_bytes > 0),
+  preview_size_bytes bigint not null check (preview_size_bytes > 0 and preview_size_bytes <= 2097152),
   width integer,
   height integer,
   likes_count integer not null default 0 check (likes_count >= 0),
@@ -31,6 +33,14 @@ create table if not exists public.likes (
   user_id uuid not null references auth.users(id) on delete cascade,
   created_at timestamptz not null default now(),
   primary key (photo_id, user_id)
+);
+
+-- Segredos da conexão com o Google Drive.
+-- Esta tabela NÃO fica acessível ao frontend.
+create table if not exists public.app_settings (
+  key text primary key,
+  value text not null,
+  updated_at timestamptz not null default now()
 );
 
 create index if not exists photos_created_at_idx on public.photos (created_at desc);
@@ -83,22 +93,23 @@ for each row execute function public.sync_photo_like_count();
 alter table public.profiles enable row level security;
 alter table public.photos enable row level security;
 alter table public.likes enable row level security;
+alter table public.app_settings enable row level security;
 
--- Remove privilégios amplos e devolve somente o necessário.
 revoke all on public.profiles from anon, authenticated;
 revoke all on public.photos from anon, authenticated;
 revoke all on public.likes from anon, authenticated;
+revoke all on public.app_settings from anon, authenticated;
 
 grant select, insert, update on public.profiles to authenticated;
 grant select on public.photos to authenticated;
 grant select, insert, delete on public.likes to authenticated;
 
--- O Worker usa uma Secret Key e, portanto, opera como service_role.
 grant all on public.profiles to service_role;
 grant all on public.photos to service_role;
 grant all on public.likes to service_role;
+grant all on public.app_settings to service_role;
 
--- Políticas do perfil: cada convidado só mexe no próprio perfil.
+-- Perfil: cada convidado cuida somente do próprio nome.
 drop policy if exists "profile_select_own" on public.profiles;
 create policy "profile_select_own"
 on public.profiles for select
@@ -118,14 +129,14 @@ to authenticated
 using ((select auth.uid()) = id)
 with check ((select auth.uid()) = id);
 
--- Todo convidado autenticado pode ver o feed.
+-- Feed: convidados autenticados enxergam apenas fotos publicadas.
 drop policy if exists "photos_read_party" on public.photos;
 create policy "photos_read_party"
 on public.photos for select
 to authenticated
 using (published = true);
 
--- Cada convidado vê somente suas próprias curtidas.
+-- Curtidas: cada convidado vê e altera apenas as próprias curtidas.
 drop policy if exists "likes_select_own" on public.likes;
 create policy "likes_select_own"
 on public.likes for select
@@ -144,7 +155,7 @@ on public.likes for delete
 to authenticated
 using ((select auth.uid()) = user_id);
 
--- Habilita Realtime para o feed. O bloco evita erro se rodar o SQL novamente.
+-- Realtime apenas para novas publicações no feed.
 do $$
 begin
   if not exists (

@@ -70,11 +70,18 @@ export async function getAccessToken() {
   return token;
 }
 
+function withPreviewUrl(photo) {
+  return {
+    ...photo,
+    preview_url: `/api/media?photo=${encodeURIComponent(photo.id)}`,
+  };
+}
+
 export async function fetchFeed({ before = null, limit = config.feedPageSize, userId = null } = {}) {
   const supabase = getSupabase();
   let query = supabase
     .from("photos")
-    .select("id,user_id,display_name,preview_url,mime_type,size_bytes,width,height,likes_count,created_at")
+    .select("id,user_id,display_name,mime_type,size_bytes,width,height,likes_count,created_at")
     .eq("published", true)
     .order("created_at", { ascending: false })
     .limit(limit);
@@ -89,7 +96,10 @@ export async function fetchFeed({ before = null, limit = config.feedPageSize, us
   const ids = photos.map(photo => photo.id);
   const { data: likedRows, error: likesError } = await supabase.from("likes").select("photo_id").in("photo_id", ids);
   if (likesError) throw likesError;
-  return { photos, liked: new Set((likedRows || []).map(row => row.photo_id)) };
+  return {
+    photos: photos.map(withPreviewUrl),
+    liked: new Set((likedRows || []).map(row => row.photo_id)),
+  };
 }
 
 export async function setLike(photoId, shouldLike) {
@@ -115,7 +125,10 @@ export function subscribeToPhotoChanges(onChange) {
     .on(
       "postgres_changes",
       { event: "INSERT", schema: "public", table: "photos" },
-      payload => onChange(payload),
+      payload => {
+        if (payload.new?.id) payload.new.preview_url = `/api/media?photo=${encodeURIComponent(payload.new.id)}`;
+        onChange(payload);
+      },
     )
     .subscribe();
   return () => supabase.removeChannel(channel);

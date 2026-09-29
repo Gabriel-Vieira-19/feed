@@ -1,6 +1,0 @@
-SUPABASE_SECRET_KEY=sb_secret_xxxxxxxxxxxxxxxxxxxxx
-TERABOX_CLIENT_ID=xxxxxxxx
-TERABOX_CLIENT_SECRET=xxxxxxxx
-TERABOX_PRIVATE_SECRET=xxxxxxxx
-UPLOAD_SESSION_SECRET=troque-por-uma-chave-aleatoria-longa
-ADMIN_KEY=troque-por-uma-senha-administrativa-longa

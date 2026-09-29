@@ -9,7 +9,7 @@ import {
   setLike,
   subscribeToPhotoChanges,
 } from "./lib/supabase.js";
-import { fetchOriginalBlob, refreshThumbnail, uploadPhoto } from "./lib/terabox.js";
+import { getOriginalViewUrl, uploadPhotoToDrive } from "./lib/drive.js";
 import {
   downloadBlob,
   escapeHtml,
@@ -43,7 +43,6 @@ const state = {
   myLiked: new Set(),
   realtimeCleanup: null,
   refreshTimer: null,
-  modalObjectUrl: null,
   uploading: false,
 };
 
@@ -251,7 +250,7 @@ async function publishSelectedPhoto() {
   const title = panel.querySelector("h3");
   const bar = panel.querySelector(".progress-bar");
   try {
-    const photo = await uploadPhoto(state.selectedFile, state.profile.display_name, progress => {
+    const photo = await uploadPhotoToDrive(state.selectedFile, state.profile.display_name, progress => {
       title.textContent = progress.label;
       bar.style.width = `${Math.max(2, Math.min(100, progress.value * 100))}%`;
     });
@@ -389,11 +388,10 @@ function renderPhotoCollection(selector, photos, likedSet, emptyText = "Ainda n�
   container.querySelectorAll("[data-like]").forEach(button => button.addEventListener("click", handleLikeClick));
   container.querySelectorAll("[data-photo-open]").forEach(img => {
     img.addEventListener("click", () => openOriginalPhoto(img.dataset.photoOpen));
-    img.addEventListener("error", () => repairThumbnail(img));
-  });
-  container.querySelectorAll("[data-thumbnail-refresh]").forEach(placeholder => {
-    placeholder.addEventListener("click", () => repairMissingThumbnail(placeholder));
-    queueMicrotask(() => repairMissingThumbnail(placeholder));
+    img.addEventListener("error", () => {
+      const frame = img.closest(".photo-frame");
+      if (frame) frame.innerHTML = `<div class="thumbnail-pending"><small>Prévia indisponível. Atualize a página para tentar novamente.</small></div>`;
+    });
   });
 }
 
@@ -409,7 +407,7 @@ function photoCardHtml(photo, liked) {
   const aspect = safePhotoAspect(photo);
   return `<article class="photo-card" data-photo-card="${photo.id}">
     <div class="photo-frame" style="aspect-ratio:${aspect}">
-      ${preview ? `<img loading="lazy" decoding="async" src="${preview}" alt="Foto publicada por ${escapeHtml(photo.display_name)}" data-photo-open="${photo.id}" />` : `<button class="thumbnail-pending" type="button" data-thumbnail-refresh="${photo.id}" aria-label="Tentar carregar a prévia"><span class="photo-skeleton"></span><small>Preparando prévia…</small></button>`}
+      <img loading="lazy" decoding="async" src="${preview}" alt="Foto publicada por ${escapeHtml(photo.display_name)}" data-photo-open="${photo.id}" />
     </div>
     <div class="photo-card-body">
       <div class="photo-meta"><p class="photo-author">Publicado por <strong>${escapeHtml(photo.display_name)}</strong></p><div class="photo-time">${escapeHtml(formatRelativeTime(photo.created_at))}</div></div>
@@ -464,61 +462,48 @@ async function handleLikeClick(event) {
   }
 }
 
-function updateThumbnailEverywhere(photoId, previewUrl) {
-  for (const photo of findPhotoEverywhere(photoId)) photo.preview_url = previewUrl;
-}
-
-async function repairMissingThumbnail(placeholder) {
-  if (!placeholder || placeholder.dataset.repairing === "1") return;
-  placeholder.dataset.repairing = "1";
-  const photoId = placeholder.dataset.thumbnailRefresh;
-  try {
-    const result = await refreshThumbnail(photoId);
-    if (!result.previewUrl) throw new Error("Prévia ainda indisponível.");
-    updateThumbnailEverywhere(photoId, result.previewUrl);
-    renderAllPhotoViews();
-  } catch {
-    placeholder.dataset.repairing = "0";
-    const label = placeholder.querySelector("small");
-    if (label) label.textContent = "Prévia em processamento — toque para tentar novamente";
-  }
-}
-
-async function repairThumbnail(img) {
-  if (img.dataset.repairing === "1") return;
-  img.dataset.repairing = "1";
-  try {
-    const result = await refreshThumbnail(img.dataset.photoOpen);
-    if (result.previewUrl) {
-      updateThumbnailEverywhere(img.dataset.photoOpen, result.previewUrl);
-      img.src = result.previewUrl;
-    }
-  } catch {
-    const frame = img.closest(".photo-frame");
-    if (frame) frame.innerHTML = `<button class="thumbnail-pending" type="button" data-thumbnail-refresh="${escapeHtml(img.dataset.photoOpen)}"><small>Prévia indisponível — toque para tentar novamente</small></button>`;
-  }
-}
-
 async function openOriginalPhoto(photoId) {
   const root = document.querySelector("#modal-root");
-  root.innerHTML = `<div class="modal-backdrop"><div class="photo-modal"><button class="modal-close" type="button" aria-label="Fechar">×</button><div class="modal-loading">Abrindo a foto original…</div></div></div>`;
+  const photo = findPhotoEverywhere(photoId)[0];
+  const previewUrl = photo?.preview_url || `/api/media?photo=${encodeURIComponent(photoId)}`;
+  root.innerHTML = `<div class="modal-backdrop"><div class="photo-modal">
+    <button class="modal-close" type="button" aria-label="Fechar">×</button>
+    <img src="${escapeHtml(previewUrl)}" alt="Foto da festa" />
+    <div class="modal-actions">
+      <button id="open-original" class="btn btn-primary" type="button">ABRIR FOTO ORIGINAL</button>
+      <button id="close-original" class="btn btn-secondary" type="button">FECHAR</button>
+    </div>
+  </div></div>`;
   root.querySelector(".modal-close").onclick = closePhotoModal;
-  root.querySelector(".modal-backdrop").addEventListener("click", event => { if (event.target.classList.contains("modal-backdrop")) closePhotoModal(); });
-  try {
-    const blob = await fetchOriginalBlob(photoId);
-    if (state.modalObjectUrl) URL.revokeObjectURL(state.modalObjectUrl);
-    state.modalObjectUrl = URL.createObjectURL(blob);
-    root.querySelector(".photo-modal").insertAdjacentHTML("beforeend", `<img src="${state.modalObjectUrl}" alt="Foto original" />`);
-    root.querySelector(".modal-loading").remove();
-  } catch (err) {
-    root.querySelector(".modal-loading").textContent = err.message || "Não foi possível abrir a foto original.";
-  }
+  root.querySelector("#close-original").onclick = closePhotoModal;
+  root.querySelector(".modal-backdrop").addEventListener("click", event => {
+    if (event.target.classList.contains("modal-backdrop")) closePhotoModal();
+  });
+  root.querySelector("#open-original").onclick = async event => {
+    const button = event.currentTarget;
+    button.disabled = true;
+    button.textContent = "ABRINDO…";
+    const popup = window.open("about:blank", "_blank");
+    try {
+      const url = await getOriginalViewUrl(photoId);
+      if (popup) {
+        popup.opener = null;
+        popup.location.href = url;
+      } else {
+        window.location.href = url;
+      }
+    } catch (err) {
+      popup?.close();
+      toast(err.message || "Não foi possível abrir a foto original.", "error");
+    } finally {
+      button.disabled = false;
+      button.textContent = "ABRIR FOTO ORIGINAL";
+    }
+  };
 }
 
 function closePhotoModal() {
   document.querySelector("#modal-root").innerHTML = "";
-  if (state.modalObjectUrl) URL.revokeObjectURL(state.modalObjectUrl);
-  state.modalObjectUrl = null;
 }
 
 async function editDisplayName() {
@@ -578,77 +563,75 @@ async function bootstrapApp() {
   await startDataLayer();
 }
 
-function findAuthorizationCode(data) {
-  if (!data) return null;
-  if (typeof data === "string") {
-    try { return findAuthorizationCode(JSON.parse(data)); } catch { return null; }
-  }
-  if (typeof data !== "object") return null;
-  if (typeof data.code === "string" && data.code.length > 2) return data.code;
-  for (const value of Object.values(data)) {
-    const found = findAuthorizationCode(value);
-    if (found) return found;
-  }
-  return null;
-}
-
-function renderTeraBoxAdmin() {
-  const missing = [];
-  if (!config.workerUrl) missing.push("VITE_WORKER_URL");
-  if (!config.teraboxClientId) missing.push("VITE_TERABOX_CLIENT_ID");
+function renderDriveAdmin() {
+  const params = new URLSearchParams(location.search);
+  const connectedParam = params.get("connected") === "1";
+  const driveError = params.get("drive_error") || "";
   app.innerHTML = `<div class="admin-layout"><section class="admin-card">
-    <div class="brand-kicker">ADMINISTRAÇÃO</div><h1>Conectar TeraBox</h1>
-    <p class="brand-subtitle">Esta página serve apenas para autorizar a conta TeraBox usada pelo aplicativo. Ela não é necessária para os convidados.</p>
-    ${missing.length ? `<div class="admin-status">Configuração ausente: ${missing.map(escapeHtml).join(", ")}</div>` : `
-    <div class="field"><label for="admin-key">CHAVE DE ADMINISTRAÇÃO DO WORKER</label><input id="admin-key" class="text-input" type="password" autocomplete="off" placeholder="ADMIN_KEY" /></div>
-    <div class="admin-actions"><button id="check-terabox" class="btn btn-secondary" type="button">VERIFICAR CONEXÃO</button><button id="connect-terabox" class="btn btn-primary" type="button">CONECTAR / RECONECTAR TERABOX</button></div>
-    <div id="admin-status" class="admin-status">Informe a chave de administração e verifique o estado.</div>
-    <div id="terabox-frame-wrap" class="terabox-frame-wrap"><iframe id="terabox-frame" class="terabox-frame" title="Autorização TeraBox"></iframe></div>`}
+    <div class="brand-kicker">ADMINISTRAÇÃO</div>
+    <h1>Google Drive</h1>
+    <p class="brand-subtitle">Conecte uma única conta Google. É nela que o aplicativo guardará as fotos originais e as prévias.</p>
+    <div class="field">
+      <label for="admin-key">CHAVE DE ADMINISTRAÇÃO</label>
+      <input id="admin-key" class="text-input" type="password" autocomplete="off" placeholder="ADMIN_KEY" />
+    </div>
+    <div class="admin-actions">
+      <button id="check-drive" class="btn btn-secondary" type="button">VERIFICAR CONEXÃO</button>
+      <button id="connect-drive" class="btn btn-primary" type="button">CONECTAR / RECONECTAR GOOGLE DRIVE</button>
+    </div>
+    <div id="admin-status" class="admin-status">${escapeHtml(driveError || (connectedParam ? "Autorização concluída. Informe a chave e verifique a conexão." : "Informe a chave de administração."))}</div>
+    <p class="hint">A conta Google é autorizada somente nesta página. Os convidados nunca fazem login no Google.</p>
   </section></div>`;
-  if (missing.length) return;
 
   const keyInput = document.querySelector("#admin-key");
   const status = document.querySelector("#admin-status");
-  document.querySelector("#check-terabox").onclick = async () => {
+  const savedKey = sessionStorage.getItem("pedro_momentos_admin_key") || "";
+  keyInput.value = savedKey;
+
+  async function adminFetch(path, options = {}) {
+    const key = keyInput.value.trim();
+    if (!key) throw new Error("Informe a ADMIN_KEY primeiro.");
+    sessionStorage.setItem("pedro_momentos_admin_key", key);
+    const response = await fetch(path, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        "X-Admin-Key": key,
+        ...(options.headers || {}),
+      },
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || `Erro ${response.status}.`);
+    return data;
+  }
+
+  document.querySelector("#check-drive").onclick = async () => {
+    status.textContent = "Verificando…";
     try {
-      const response = await fetch(`${config.workerUrl}/admin/terabox/status`, { headers: { "X-Admin-Key": keyInput.value } });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Falha ao verificar.");
-      status.textContent = data.connected ? `Conectado. Token válido até ${new Date(data.expiresAt).toLocaleString("pt-BR")}.` : "TeraBox ainda não está conectado.";
-    } catch (err) { status.textContent = err.message; }
-  };
-  document.querySelector("#connect-terabox").onclick = () => {
-    if (!keyInput.value) { status.textContent = "Informe a ADMIN_KEY primeiro."; return; }
-    const wrap = document.querySelector("#terabox-frame-wrap");
-    const frame = document.querySelector("#terabox-frame");
-    frame.src = `https://www.terabox.com/wap/outside/login?clientId=${encodeURIComponent(config.teraboxClientId)}`;
-    wrap.classList.add("show");
-    status.textContent = "Faça login no TeraBox e autorize o aplicativo.";
+      const data = await adminFetch("/api/admin-drive-status");
+      status.textContent = data.connected
+        ? `Google Drive conectado. Pasta: ${data.folderName || "Pedro Momentos"}.`
+        : "Google Drive ainda não está conectado.";
+    } catch (err) {
+      status.textContent = err.message;
+    }
   };
 
-  window.addEventListener("message", async event => {
-    let originHost = "";
-    try { originHost = new URL(event.origin).hostname; } catch { return; }
-    if (!/(^|\.)terabox\.(com|app)$/i.test(originHost)) return;
-    const code = findAuthorizationCode(event.data);
-    if (!code) return;
-    status.textContent = "Autorização recebida. Concluindo conexão…";
+  document.querySelector("#connect-drive").onclick = async () => {
+    status.textContent = "Preparando autorização…";
     try {
-      const response = await fetch(`${config.workerUrl}/admin/terabox/exchange`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Admin-Key": keyInput.value },
-        body: JSON.stringify({ code }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Não foi possível conectar.");
-      status.textContent = "TeraBox conectado com sucesso.";
-      document.querySelector("#terabox-frame-wrap").classList.remove("show");
-    } catch (err) { status.textContent = err.message; }
-  });
+      const data = await adminFetch("/api/admin-drive-auth", { method: "POST", body: "{}" });
+      window.location.href = data.url;
+    } catch (err) {
+      status.textContent = err.message;
+    }
+  };
+
+  if (connectedParam && savedKey) document.querySelector("#check-drive").click();
 }
 
-if (new URLSearchParams(location.search).get("admin") === "terabox") {
-  renderTeraBoxAdmin();
+if (new URLSearchParams(location.search).get("admin") === "drive") {
+  renderDriveAdmin();
 } else {
   bootstrapApp().catch(error => renderConfigError([error.message || "Erro ao iniciar"]));
 }
