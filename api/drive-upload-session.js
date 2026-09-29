@@ -1,4 +1,4 @@
-import { createResumableSession, ensureDriveFolders, getDriveAccessToken } from "./_lib/google-drive.js";
+import { createResumableSession, ensureDriveFolders, findCompletedUploadFile, getDriveAccessToken } from "./_lib/google-drive.js";
 import { handleError, json, methodNotAllowed, readJson } from "./_lib/http.js";
 import { requireUser } from "./_lib/supabase-admin.js";
 
@@ -45,6 +45,27 @@ export default async function handler(req, res) {
     const accessToken = await getDriveAccessToken();
     const folders = await ensureDriveFolders(accessToken);
     const folderId = kind === "original" ? folders.originalsId : folders.previewsId;
+
+    // Idempotência: se este upload já terminou numa tentativa anterior,
+    // reaproveitamos o arquivo existente em vez de criar outra cópia no Drive.
+    const existingFiles = await findCompletedUploadFile(accessToken, {
+      folderId,
+      ownerId: user.id,
+      uploadGroupId,
+      kind,
+    });
+
+    if (existingFiles.length) {
+      const existing = existingFiles[0];
+      const existingSize = Number(existing.size || 0);
+      if (existingSize !== size) {
+        const error = new Error("Já existe um arquivo deste envio com tamanho diferente. Escolha a foto novamente.");
+        error.statusCode = 409;
+        throw error;
+      }
+      return json(res, 200, { alreadyUploaded: true, file: existing });
+    }
+
     const sessionUrl = await createResumableSession({
       accessToken,
       folderId,
@@ -56,7 +77,7 @@ export default async function handler(req, res) {
       ownerId: user.id,
     });
 
-    return json(res, 200, { sessionUrl });
+    return json(res, 200, { alreadyUploaded: false, sessionUrl });
   } catch (error) {
     return handleError(res, error);
   }

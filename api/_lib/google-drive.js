@@ -240,6 +240,36 @@ export async function getDriveFile(accessToken, fileId) {
   return response.json();
 }
 
+function escapeDriveQueryValue(value) {
+  return String(value || "")
+    .replace(/\\/g, "\\\\")
+    .replace(/'/g, "\\'");
+}
+
+export async function findCompletedUploadFile(accessToken, { folderId, ownerId, uploadGroupId, kind }) {
+  const q = [
+    `'${escapeDriveQueryValue(folderId)}' in parents`,
+    "trashed = false",
+    `appProperties has { key='app_id' and value='pedro_momentos' }`,
+    `appProperties has { key='owner_id' and value='${escapeDriveQueryValue(ownerId)}' }`,
+    `appProperties has { key='upload_group' and value='${escapeDriveQueryValue(uploadGroupId)}' }`,
+    `appProperties has { key='kind' and value='${escapeDriveQueryValue(kind)}' }`,
+  ].join(" and ");
+
+  const fields = "files(id,name,mimeType,size,parents,appProperties,imageMediaMetadata,webViewLink,webContentLink,trashed,createdTime)";
+  const params = new URLSearchParams({
+    q,
+    spaces: "drive",
+    pageSize: "10",
+    orderBy: "createdTime desc",
+    fields,
+  });
+
+  const response = await driveFetch(`/files?${params.toString()}`, accessToken);
+  const data = await response.json();
+  return Array.isArray(data.files) ? data.files : [];
+}
+
 export async function ensureAnyoneReader(accessToken, fileId) {
   const listResponse = await driveFetch(`/files/${encodeURIComponent(fileId)}/permissions?fields=permissions(id,type,role)`, accessToken);
   const list = await listResponse.json();

@@ -3,6 +3,72 @@ import { getAccessToken } from "./supabase.js";
 import { fileStem, safeFilename, wait } from "./utils.js";
 
 const PREVIEW_TYPE = "image/jpeg";
+const UPLOAD_DRAFTS_KEY = "pedro_momentos_upload_drafts_v1";
+const UPLOAD_DRAFT_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+
+function fileFingerprint(file) {
+  return [
+    file.name || "foto",
+    Number(file.size || 0),
+    Number(file.lastModified || 0),
+    file.type || "application/octet-stream",
+  ].join("|");
+}
+
+function readUploadDrafts() {
+  try {
+    const parsed = JSON.parse(sessionStorage.getItem(UPLOAD_DRAFTS_KEY) || "{}");
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
+    const now = Date.now();
+    const fresh = {};
+    for (const [key, value] of Object.entries(parsed)) {
+      if (value?.uploadGroupId && Number(value?.updatedAt || 0) > now - UPLOAD_DRAFT_MAX_AGE_MS) {
+        fresh[key] = value;
+      }
+    }
+    return fresh;
+  } catch {
+    return {};
+  }
+}
+
+function writeUploadDrafts(drafts) {
+  try {
+    sessionStorage.setItem(UPLOAD_DRAFTS_KEY, JSON.stringify(drafts));
+  } catch {
+    // Se o navegador bloquear sessionStorage, a proteção em memória/servidor continua funcionando.
+  }
+}
+
+function getOrCreateUploadGroupId(file) {
+  const key = fileFingerprint(file);
+  const drafts = readUploadDrafts();
+  const existing = drafts[key];
+  if (existing?.uploadGroupId) {
+    drafts[key] = { ...existing, updatedAt: Date.now() };
+    writeUploadDrafts(drafts);
+    return existing.uploadGroupId;
+  }
+
+  const uploadGroupId = crypto.randomUUID();
+  drafts[key] = { uploadGroupId, updatedAt: Date.now() };
+
+  const trimmed = Object.fromEntries(
+    Object.entries(drafts)
+      .sort((a, b) => Number(b[1]?.updatedAt || 0) - Number(a[1]?.updatedAt || 0))
+      .slice(0, 12),
+  );
+  writeUploadDrafts(trimmed);
+  return uploadGroupId;
+}
+
+function clearUploadDraft(file) {
+  const key = fileFingerprint(file);
+  const drafts = readUploadDrafts();
+  if (!(key in drafts)) return;
+  delete drafts[key];
+  writeUploadDrafts(drafts);
+}
 
 async function apiFetch(path, options = {}) {
   const token = await getAccessToken();
@@ -129,27 +195,39 @@ async function createUploadSession({ kind, file, uploadGroupId, displayName }) {
   });
 }
 
-function parseReceivedEnd(response) {
-  const range = response.headers.get("Range") || response.headers.get("range");
-  if (!range) return null;
-  const match = /bytes=0-(\d+)/i.exec(range);
-  return match ? Number(match[1]) : null;
+async function proxyUploadRequest(sessionUrl, { body = null, contentType = "application/octet-stream", contentRange }) {
+  const token = await getAccessToken();
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    "X-Drive-Session-Url": sessionUrl,
+    "Content-Range": contentRange,
+  };
+  if (body) headers["Content-Type"] = contentType || "application/octet-stream";
+
+  let response;
+  try {
+    response = await fetch("/api/drive-upload-proxy", {
+      method: "PUT",
+      headers,
+      body,
+    });
+  } catch (error) {
+    throw new Error("Não foi possível alcançar o servidor de upload. Verifique sua conexão e tente novamente.");
+  }
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data.error || `Falha no envio (${response.status}).`);
+  }
+  return data;
 }
 
 async function queryUploadOffset(sessionUrl, total) {
-  const response = await fetch(sessionUrl, {
-    method: "PUT",
-    headers: { "Content-Range": `bytes */${total}` },
+  const result = await proxyUploadRequest(sessionUrl, {
+    contentRange: `bytes */${total}`,
   });
-  if (response.status === 200 || response.status === 201) {
-    return { complete: true, metadata: await response.json() };
-  }
-  if (response.status === 308) {
-    const end = parseReceivedEnd(response);
-    return { complete: false, next: end == null ? 0 : end + 1 };
-  }
-  if (response.status === 404) throw new Error("A sessão de upload expirou. Tente publicar novamente.");
-  throw new Error(`Não foi possível consultar o upload (${response.status}).`);
+  if (result.complete) return { complete: true, metadata: result.metadata };
+  return { complete: false, next: Number.isInteger(result.next) ? result.next : 0 };
 }
 
 export async function uploadFileResumable(sessionUrl, file, onProgress) {
@@ -162,32 +240,20 @@ export async function uploadFileResumable(sessionUrl, file, onProgress) {
     const chunk = file.slice(offset, end);
 
     try {
-      const response = await fetch(sessionUrl, {
-        method: "PUT",
-        headers: {
-          "Content-Type": file.type || "application/octet-stream",
-          "Content-Range": `bytes ${offset}-${end - 1}/${total}`,
-        },
+      const result = await proxyUploadRequest(sessionUrl, {
         body: chunk,
+        contentType: file.type || "application/octet-stream",
+        contentRange: `bytes ${offset}-${end - 1}/${total}`,
       });
 
-      if (response.status === 200 || response.status === 201) {
+      if (result.complete) {
         onProgress?.(1);
-        return response.json();
+        return result.metadata;
       }
 
-      if (response.status === 308) {
-        const receivedEnd = parseReceivedEnd(response);
-        offset = receivedEnd == null ? end : receivedEnd + 1;
-        retryCount = 0;
-        onProgress?.(Math.min(0.99, offset / total));
-        continue;
-      }
-
-      if (response.status >= 500) throw new Error(`Falha temporária ${response.status}`);
-      if (response.status === 404) throw new Error("A sessão de upload expirou. Tente publicar novamente.");
-      const text = await response.text().catch(() => "");
-      throw new Error(text || `Falha no upload (${response.status}).`);
+      offset = Number.isInteger(result.next) ? result.next : end;
+      retryCount = 0;
+      onProgress?.(Math.min(0.99, offset / total));
     } catch (error) {
       retryCount += 1;
       if (retryCount > 4) throw error;
@@ -203,30 +269,47 @@ export async function uploadFileResumable(sessionUrl, file, onProgress) {
   throw new Error("O Google Drive não confirmou o término do upload.");
 }
 
+async function uploadOrReuse(session, file, onProgress) {
+  if (session?.alreadyUploaded && session?.file?.id) {
+    onProgress?.(1);
+    return session.file;
+  }
+  if (!session?.sessionUrl) throw new Error("O servidor não devolveu uma sessão de upload válida.");
+  return uploadFileResumable(session.sessionUrl, file, onProgress);
+}
+
 export async function uploadPhotoToDrive(file, displayName, onProgress) {
-  const uploadGroupId = crypto.randomUUID();
+  // O mesmo arquivo mantém o mesmo grupo enquanto a publicação não termina.
+  // Assim, uma nova tentativa reaproveita o que já chegou ao Drive.
+  const uploadGroupId = getOrCreateUploadGroupId(file);
 
   onProgress?.({ label: "Preparando a prévia…", value: 0.03 });
   const previewData = await createFeedPreview(file);
   const previewFile = new File(
     [previewData.blob],
     `${fileStem(file.name || "foto")}-preview.jpg`,
-    { type: PREVIEW_TYPE, lastModified: Date.now() },
+    { type: PREVIEW_TYPE, lastModified: file.lastModified || Date.now() },
   );
 
-  onProgress?.({ label: "Preparando envio…", value: 0.08 });
+  onProgress?.({ label: "Verificando envio anterior…", value: 0.08 });
   const [originalSession, previewSession] = await Promise.all([
     createUploadSession({ kind: "original", file, uploadGroupId, displayName }),
     createUploadSession({ kind: "preview", file: previewFile, uploadGroupId, displayName }),
   ]);
 
-  onProgress?.({ label: "Enviando foto original…", value: 0.12 });
-  const original = await uploadFileResumable(originalSession.sessionUrl, file, ratio => {
+  onProgress?.({
+    label: originalSession.alreadyUploaded ? "Foto original já enviada. Reaproveitando…" : "Enviando foto original…",
+    value: originalSession.alreadyUploaded ? 0.74 : 0.12,
+  });
+  const original = await uploadOrReuse(originalSession, file, ratio => {
     onProgress?.({ label: "Enviando foto original…", value: 0.12 + ratio * 0.62 });
   });
 
-  onProgress?.({ label: "Enviando prévia…", value: 0.76 });
-  const preview = await uploadFileResumable(previewSession.sessionUrl, previewFile, ratio => {
+  onProgress?.({
+    label: previewSession.alreadyUploaded ? "Prévia já enviada. Reaproveitando…" : "Enviando prévia…",
+    value: previewSession.alreadyUploaded ? 0.92 : 0.76,
+  });
+  const preview = await uploadOrReuse(previewSession, previewFile, ratio => {
     onProgress?.({ label: "Enviando prévia…", value: 0.76 + ratio * 0.16 });
   });
 
@@ -242,6 +325,7 @@ export async function uploadPhotoToDrive(file, displayName, onProgress) {
     }),
   });
 
+  clearUploadDraft(file);
   onProgress?.({ label: "Publicado!", value: 1 });
   return {
     ...published.photo,

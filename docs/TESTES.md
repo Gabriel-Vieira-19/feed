@@ -127,3 +127,15 @@ Antes da festa, faça pelo menos:
 - teste em Wi‑Fi e 4G/5G.
 
 Para o protótipo, o Google Drive é o storage. Se o teste mostrar que a festa exigirá muito mais que 15 GB, a camada de armazenamento pode ser trocada depois sem redesenhar o feed, usuários e curtidas.
+
+## Teste de nova tentativa sem duplicar o original
+
+1. Escolha uma foto de teste.
+2. Inicie **PUBLICAR NA FESTA**.
+3. Interrompa a conexão depois que o original tiver terminado, ou provoque uma falha antes da etapa final de publicação.
+4. Restabeleça a conexão e toque em **TENTAR PUBLICAR NOVAMENTE**.
+5. A interface deve informar que está verificando/reaproveitando o envio anterior.
+6. Confira `Pedro Momentos/Originais` no Drive: deve existir apenas um original para essa tentativa.
+7. Confira o feed: deve existir apenas uma publicação.
+
+Também teste vários toques rápidos em **PUBLICAR NA FESTA**. Enquanto o primeiro envio estiver ativo, o botão deve permanecer desabilitado e nenhum segundo envio deve começar.

@@ -10,7 +10,7 @@ export const config = Object.freeze({
   maxDisplayNameLength: 40,
   refreshIntervalMs: 30_000,
   previewMaxBytes: 2 * 1024 * 1024,
-  uploadChunkBytes: 4 * 1024 * 1024,
+  uploadChunkBytes: 3 * 1024 * 1024,
 });
 
 export function assertPublicConfig() {

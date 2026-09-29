@@ -240,20 +240,32 @@ function renderPhotoPreview() {
 
 async function publishSelectedPhoto() {
   if (!state.selectedFile || state.uploading) return;
+
   const panel = document.querySelector("#upload-panel");
   const publishButton = document.querySelector("#publish-photo");
+  const saveButton = document.querySelector("#save-photo");
+  const retakeButton = document.querySelector("#retake-photo");
+  const selectedFile = state.selectedFile;
+
   state.uploading = true;
-  if (publishButton) publishButton.disabled = true;
+  for (const button of [publishButton, saveButton, retakeButton]) {
+    if (button) button.disabled = true;
+  }
+  if (publishButton) publishButton.textContent = "PUBLICANDO…";
+
   panel.hidden = false;
   panel.className = "upload-panel";
-  panel.innerHTML = `<div class="upload-card"><h3>Preparando…</h3><p>Não feche esta tela.</p><div class="progress-track"><div class="progress-bar"></div></div></div>`;
+  panel.innerHTML = `<div class="upload-card"><h3>Preparando…</h3><p>Não feche esta tela. Se houver uma falha, você poderá tentar novamente sem reenviar o que já terminou.</p><div class="progress-track"><div class="progress-bar"></div></div></div>`;
   const title = panel.querySelector("h3");
+  const description = panel.querySelector("p");
   const bar = panel.querySelector(".progress-bar");
+
   try {
-    const photo = await uploadPhotoToDrive(state.selectedFile, state.profile.display_name, progress => {
+    const photo = await uploadPhotoToDrive(selectedFile, state.profile.display_name, progress => {
       title.textContent = progress.label;
       bar.style.width = `${Math.max(2, Math.min(100, progress.value * 100))}%`;
     });
+
     toast("Foto publicada no feed!", "success");
     clearSelectedFile();
     renderCameraEmpty();
@@ -263,9 +275,17 @@ async function publishSelectedPhoto() {
     renderMine();
     switchView("feed");
   } catch (err) {
-    panel.hidden = true;
-    if (publishButton) publishButton.disabled = false;
-    toast(err.message || "Não foi possível publicar a foto.", "error", 5000);
+    title.textContent = "Não foi possível concluir";
+    description.textContent = "Toque em PUBLICAR novamente. O aplicativo vai reaproveitar a foto original ou a prévia que já tiverem sido enviadas ao Drive.";
+    bar.style.width = "0%";
+    if (publishButton) {
+      publishButton.disabled = false;
+      publishButton.textContent = "TENTAR PUBLICAR NOVAMENTE";
+    }
+    for (const button of [saveButton, retakeButton]) {
+      if (button) button.disabled = false;
+    }
+    toast(err.message || "Não foi possível publicar a foto.", "error", 6000);
   } finally {
     state.uploading = false;
   }

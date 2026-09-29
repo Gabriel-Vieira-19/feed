@@ -111,3 +111,20 @@ npm run check
 ```
 
 > O OAuth do Google é mais simples de testar no domínio real da Vercel, porque o `redirect_uri` precisa coincidir exatamente com o cadastrado no Google Cloud.
+
+
+## Correção de upload via Vercel
+
+A versão 2.1 não envia mais os blocos diretamente do navegador para a URL de sessão do Google Drive. Os blocos de 3 MB passam por `/api/drive-upload-proxy`, que os encaminha ao Drive. Isso evita erros genéricos `Failed to fetch`/CORS no navegador e mantém cada requisição abaixo do limite de 4,5 MB das Vercel Functions. O arquivo original continua sem compressão ou conversão.
+
+## v2.2 — proteção contra fotos duplicadas em novas tentativas
+
+Se uma publicação falhar depois que a foto original ou a prévia já tiver sido enviada ao Google Drive, tocar novamente em **PUBLICAR** reaproveita os arquivos já concluídos. O mesmo arquivo mantém um `upload_group_id` temporário até a publicação terminar, e a API consulta o Drive antes de abrir uma nova sessão.
+
+Isso cobre três casos importantes:
+
+- vários toques rápidos no botão: o botão e as demais ações ficam bloqueados enquanto há um envio ativo;
+- falha depois do original: a próxima tentativa não envia o original novamente;
+- falha depois de o backend publicar, mas antes de o celular receber a resposta: `photo-publish` continua idempotente e devolve a publicação já existente.
+
+As cópias antigas criadas por versões anteriores usavam identificadores diferentes e, por isso, não podem ser reconhecidas com segurança como duplicatas. Elas podem ser excluídas manualmente da pasta `Pedro Momentos/Originais` no Drive.
