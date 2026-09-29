@@ -1,0 +1,19 @@
+name = "pedro-momentos-api"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+
+[vars]
+ALLOWED_ORIGINS = "https://SEU-SITE.vercel.app,http://localhost:5173"
+SUPABASE_URL = "https://SEU_PROJETO.supabase.co"
+SUPABASE_PUBLISHABLE_KEY = "sb_publishable_xxxxxxxxxxxxxxxxxxxxx"
+TERABOX_ROOT_DIR = "/From: Other Applications/NOME_DO_APP-/"
+TERABOX_APP_ID = "250528"
+MAX_UPLOAD_BYTES = "31457280"
+
+[[durable_objects.bindings]]
+name = "TERA_TOKEN_VAULT"
+class_name = "TeraTokenVault"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["TeraTokenVault"]
