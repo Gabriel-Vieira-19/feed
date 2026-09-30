@@ -1,165 +1,139 @@
-# Roteiro final de testes — Pedro Momentos
+# Testes — Filtros V1
 
-Faça os testes antes da festa em Android e iPhone.
+Faça pelo menos um ciclo completo em Android e outro em iPhone antes de considerar esta fase pronta.
 
-## 1. Painel e Drive
+## 1. Migração e painel
 
-Abra `/?admin=drive`.
+- execute `supabase/upgrade_final_to_filters_v1.sql` antes do novo deploy;
+- abra `/?admin=drive`;
+- confirme que **ATUALIZAR PAINEL** funciona;
+- confirme que o Google Drive contém `Originais`, `Prévias` e `Publicados`.
+
+## 2. Câmera interna
+
+- abra a aba Câmera;
+- permita acesso;
+- confirme imagem ao vivo;
+- troque entre traseira e frontal;
+- altere vários efeitos antes da foto;
+- confirme que o overlay ao vivo muda sem recarregar a página;
+- saia da aba Câmera e confirme que a câmera do aparelho desliga.
+
+## 3. Fallback da câmera nativa
+
+- teste o botão **CÂMERA NATIVA**;
+- em um aparelho onde a permissão da câmera interna for negada, confirme que o fallback continua permitindo tirar foto;
+- a interface do app não deve oferecer botão próprio de galeria.
+
+## 4. Todos os efeitos
+
+Publique pelo menos uma foto com cada efeito:
+
+- Original;
+- Dourado;
+- Quente;
+- Frio;
+- Arquivo 18;
+- Flagra da Festa;
+- A família NÃO vai ver;
+- Memória Desbloqueada;
+- Raridade da Foto;
+- Detector de Histórias;
+- Câmera Descartável 18;
+- Primeira Noite dos 18.
+
+Confirme que molduras e textos aparecem também na foto final, não apenas na câmera ao vivo.
+
+## 5. Efeitos aleatórios
+
+Faça duas ou três capturas separadas com:
+
+- Raridade da Foto;
+- Detector de Histórias;
+- Memória Desbloqueada.
+
+Os resultados podem variar entre capturas. Depois de tirar uma foto, o resultado daquela captura deve permanecer igual durante o upload e após recuperação da página.
+
+## 6. Troca de efeito depois da foto
+
+- tire uma foto;
+- na tela de prévia, selecione outro efeito;
+- aguarde o processamento;
+- troque novamente;
+- publique somente o resultado final escolhido.
+
+O arquivo original não deve ser alterado.
+
+## 7. Drive
+
+Para uma foto com efeito, confirme:
+
+```text
+Originais/   → arquivo original
+Publicados/  → JPEG com efeito
+Prévias/     → JPEG leve para o feed
+```
+
+Para `Original`, a pasta `Publicados` não precisa receber uma cópia duplicada; o feed utiliza uma prévia criada do original.
+
+## 8. Meus cliques e downloads
+
+- no feed geral não deve existir download;
+- em Meus cliques, **Baixar foto** deve baixar a versão publicada;
+- abra uma foto com efeito e confirme o botão **Baixar original**;
+- compare os dois arquivos: o original não deve conter moldura/filtro e a foto publicada deve conter o efeito.
+
+## 9. Recuperação
+
+- tire uma foto com efeito;
+- antes de publicar, recarregue a página;
+- o app deve recuperar original, efeito escolhido e versão processada;
+- continue a publicação.
+
+## 10. Falha de internet e idempotência
+
+- inicie uma publicação;
+- interrompa a internet durante o envio;
+- restabeleça e tente novamente;
+- a foto deve aparecer uma única vez no feed;
+- não devem surgir cópias extras do mesmo tipo no Drive.
+
+## 11. Feed
 
 Confirme:
 
-- Drive conectado;
-- pasta `Pedro Momentos` existente;
-- estatísticas carregando;
-- QR Code aparecendo;
-- botão de limpeza funcionando.
+- preview correta do efeito;
+- nome do efeito abaixo do autor quando não for `Original`;
+- curtidas;
+- modal;
+- ordenação por data, curtidas e usuário.
 
-Se você usou versões antigas, execute **PRIVATIZAR ORIGINAIS ANTIGOS**.
+## 12. Administração
 
-## 2. Entrada
+- armazenamento usado deve contabilizar original + publicado + prévia;
+- ocultar/restaurar continua funcionando;
+- ao excluir uma foto com efeito, os três arquivos devem ser removidos do Drive;
+- limpeza de abandonados continua funcionando.
 
-- informe um nome;
-- recarregue;
-- a sessão deve continuar;
-- mudar o nome no topo não deve alterar o nome das fotos antigas.
+## 13. Desempenho móvel
 
-## 3. Câmera
+Teste especialmente fotos grandes e celulares intermediários:
 
-- `ABRIR CÂMERA` deve abrir a câmera do aparelho;
-- não deve existir botão de galeria;
-- cancelar a câmera não deve gerar erro.
+- trocar efeitos na prévia não deve travar permanentemente a página;
+- durante o processamento, deve aparecer a tela de preparação;
+- após publicar ou tirar outra foto, a câmera deve continuar funcionando;
+- teste 10 a 20 capturas seguidas para verificar memória.
 
-Observação: o comportamento exato do seletor é controlado pelo navegador/sistema operacional; a interface do aplicativo não oferece publicação pela galeria.
+## 14. Regressão
 
-## 4. Publicação
+Também confirme que continuam funcionando:
 
-Teste uma foto de 1–3 MB e outra de 10–15 MB.
-
-Confirme:
-
-- barra e porcentagem de progresso;
-- original em `Originais`;
-- JPEG leve em `Prévias`;
-- apenas uma publicação no feed;
-- original não é recomprimido.
-
-## 5. Nova tentativa sem duplicar
-
-1. inicie uma publicação;
-2. interrompa a internet depois do original;
-3. restabeleça;
-4. toque em publicar novamente.
-
-Resultado esperado:
-
-- o original anterior é reaproveitado;
-- não é criada outra cópia;
-- a foto aparece somente uma vez no feed.
-
-Também toque várias vezes rapidamente em publicar. Apenas um envio deve existir.
-
-## 6. Recuperação após recarregar
-
-1. tire uma foto;
-2. antes de concluir a publicação, recarregue a página;
-3. o aplicativo deve avisar que encontrou uma foto pendente;
-4. abra a aba Câmera e continue a publicação.
-
-Essa recuperação usa armazenamento local do navegador e é uma camada de segurança adicional; sistemas móveis ainda podem limpar dados locais em situações extremas.
-
-## 7. Feed e ordenação
-
-Teste todos:
-
-- Mais recentes;
-- Mais antigas;
-- Mais curtidas;
-- Menos curtidas;
-- Usuários A–Z;
-- Usuários Z–A.
-
-Carregue mais de 20 fotos para validar o botão **CARREGAR MAIS**.
-
-## 8. Meus cliques
-
-- somente suas próprias fotos devem aparecer;
-- teste os mesmos tipos de ordenação;
-- o botão **Baixar original** deve existir somente aqui.
-
-## 9. Download privado
-
-Em `Meus cliques`:
-
-- baixe uma foto original;
-- confirme tamanho e qualidade.
-
-No feed geral:
-
-- não deve existir download do original.
-
-Tente manualmente usar o ID de uma foto de outra pessoa no endpoint de download. O backend deve negar, porque o original só pode ser baixado pelo dono da publicação.
-
-## 10. Privacidade
-
-No Google Drive, abra as propriedades de compartilhamento de um original novo.
-
-Resultado esperado:
-
-- ele não deve estar como “qualquer pessoa com o link”.
-
-## 11. Moderação
-
-No painel admin:
-
-- oculte uma publicação;
-- após a atualização do feed, ela deve desaparecer;
-- restaure e confira que volta;
-- crie uma foto descartável e teste excluir;
-- confirme que original e prévia também desapareceram do Drive.
-
-## 12. Limpeza de arquivos abandonados
-
-Para um teste controlado, envie um arquivo e interrompa antes da publicação final. A limpeza automática só remove arquivos com mais de 8 horas.
-
-O botão manual e o Cron devem responder sem erro. Não reduza o limite para produção apenas para testar.
-
-## 13. Offline
-
-- desligue a internet;
-- deve aparecer um aviso visível;
-- tente publicar e confirme mensagem clara;
-- religue e continue.
-
-## 14. Realtime
-
-Com dois celulares:
-
-- A publica;
-- B fica no feed;
-- a foto deve aparecer via Realtime ou no refresh de segurança.
-
-## 15. Curtidas
-
-- curtir/descurtir deve funcionar;
-- ao ordenar por mais/menos curtidas, o feed deve se reorganizar após sincronizar.
-
-## 16. Teste de carga
-
-Antes da festa, faça no mínimo:
-
-- 3 a 5 celulares;
-- 50 a 100 uploads;
-- várias fotos de 10 MB ou mais;
-- 200+ interações de curtida;
-- Wi‑Fi e 4G/5G;
-- abrir/fechar/recarregar durante uploads.
-
-## 17. Checklist de véspera
-
-- Google OAuth em **Em produção**;
-- Drive conectado;
-- espaço livre suficiente no Drive;
-- painel administrativo acessível;
-- QR Code impresso/testado;
-- uma publicação real feita por Android;
-- uma publicação real feita por iPhone.
+- entrada por nome;
+- Realtime;
+- curtidas;
+- paginação;
+- offline banner;
+- QR Code;
+- painel administrativo;
+- OAuth/Drive já conectado;
+- limite de 12 funções da estrutura Hobby.

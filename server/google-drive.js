@@ -5,6 +5,7 @@ const DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.file";
 const ROOT_FOLDER_NAME = "Pedro Momentos";
 const ORIGINALS_FOLDER_NAME = "Originais";
 const PREVIEWS_FOLDER_NAME = "Prévias";
+const PUBLISHED_FOLDER_NAME = "Publicados";
 
 function env(name) {
   const value = String(process.env[name] || "").trim();
@@ -148,24 +149,28 @@ export async function ensureDriveFolders(accessToken) {
   let rootId = await getSetting("google_drive_root_folder_id");
   let originalsId = await getSetting("google_drive_originals_folder_id");
   let previewsId = await getSetting("google_drive_previews_folder_id");
+  let publishedId = await getSetting("google_drive_published_folder_id");
 
   if (!(await folderIsValid(accessToken, rootId))) {
     const folder = await createFolder(accessToken, ROOT_FOLDER_NAME);
     rootId = folder.id;
     originalsId = null;
     previewsId = null;
+    publishedId = null;
   }
   if (!(await folderIsValid(accessToken, originalsId))) originalsId = (await createFolder(accessToken, ORIGINALS_FOLDER_NAME, rootId)).id;
   if (!(await folderIsValid(accessToken, previewsId))) previewsId = (await createFolder(accessToken, PREVIEWS_FOLDER_NAME, rootId)).id;
+  if (!(await folderIsValid(accessToken, publishedId))) publishedId = (await createFolder(accessToken, PUBLISHED_FOLDER_NAME, rootId)).id;
 
   await setSettings({
     google_drive_root_folder_id: rootId,
     google_drive_originals_folder_id: originalsId,
     google_drive_previews_folder_id: previewsId,
+    google_drive_published_folder_id: publishedId,
     google_drive_folder_name: ROOT_FOLDER_NAME,
   });
 
-  return { rootId, originalsId, previewsId, folderName: ROOT_FOLDER_NAME };
+  return { rootId, originalsId, previewsId, publishedId, folderName: ROOT_FOLDER_NAME };
 }
 
 export async function connectDriveWithCode(code) {

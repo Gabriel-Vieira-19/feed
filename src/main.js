@@ -9,13 +9,21 @@ import {
   setLike,
   subscribeToPhotoChanges,
 } from "./lib/supabase.js";
-import { clearUploadRecovery, downloadOriginalPhoto, uploadPhotoToDrive } from "./lib/drive.js";
+import { clearUploadRecovery, downloadPhoto, uploadPhotoToDrive } from "./lib/drive.js";
 import {
   clearPendingCapture,
   loadPendingCapture,
   requestPersistentStorage,
   savePendingCapture,
 } from "./lib/pending-upload.js";
+import {
+  createEffectMeta,
+  effectLiveOverlayHtml,
+  effects,
+  effectUploadKey,
+  getEffect,
+  renderEffectFile,
+} from "./lib/effects.js";
 import {
   downloadBlob,
   escapeHtml,
@@ -49,7 +57,14 @@ const state = {
   profile: null,
   view: "feed",
   selectedFile: null,
+  publishedFile: null,
   selectedUrl: null,
+  activeEffectId: "original",
+  effectMeta: {},
+  effectProcessing: false,
+  cameraStream: null,
+  cameraFacingMode: "environment",
+  cameraStarting: false,
   feed: [],
   liked: new Set(),
   feedDone: false,
@@ -174,14 +189,14 @@ function renderApp() {
         </section>
 
         <section id="view-camera" class="view" data-view="camera">
-          <div class="section-heading"><div><h2>Tirar uma foto</h2><p>Use a câmera do celular. Nesta versão, somente fotos tiradas durante a festa podem ser publicadas.</p></div></div>
+          <div class="section-heading"><div><h2>Câmera da festa</h2><p>Escolha um efeito, fotografe e veja o resultado antes de publicar. Todos os efeitos ficam disponíveis o tempo todo.</p></div></div>
           <div class="capture-wrap"><div id="camera-card" class="camera-card"></div></div>
           <input id="camera-input" class="file-input" type="file" accept="image/*" capture="environment" />
         </section>
 
         <section id="view-mine" class="view" data-view="mine">
           <div class="section-heading section-heading-actions">
-            <div><h2>Meus cliques</h2><p>Suas publicações. O download do original fica disponível somente aqui.</p></div>
+            <div><h2>Meus cliques</h2><p>Suas publicações. Aqui você pode baixar a versão publicada e, quando houver efeito, também o original preservado.</p></div>
             <label class="sort-control">ORDENAR
               <select id="mine-sort">${sortOptions(state.mineSort)}</select>
             </label>
@@ -225,6 +240,11 @@ function bindAppEvents() {
   });
   window.addEventListener("online", updateConnectionBanner);
   window.addEventListener("offline", updateConnectionBanner);
+  window.addEventListener("beforeunload", stopCameraStream);
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) stopCameraStream();
+    else if (state.view === "camera" && !state.selectedFile) startCamera();
+  });
 }
 
 function updateConnectionBanner() {
@@ -240,6 +260,42 @@ function switchView(view) {
   document.querySelectorAll("[data-nav]").forEach(el => el.classList.toggle("active", el.dataset.nav === view));
   window.scrollTo({ top: 0, behavior: "auto" });
   if (view === "mine" && !state.myPhotos.length && !state.mineLoading) loadMinePage(true);
+  if (view === "camera" && !state.selectedFile) startCamera();
+  if (view !== "camera") stopCameraStream();
+}
+
+function effectSelectorHtml(selectedId = state.activeEffectId) {
+  return `<div class="effect-strip" aria-label="Efeitos da câmera">${effects.map(effect => `
+    <button class="effect-option ${effect.id === selectedId ? "active" : ""}" type="button" data-effect="${effect.id}" title="${escapeHtml(effect.description)}">
+      <span class="effect-thumb effect-thumb-${effect.id}"><i></i></span>
+      <span>${escapeHtml(effect.short)}</span>
+    </button>`).join("")}</div>`;
+}
+
+function bindEffectSelector(onSelect) {
+  document.querySelectorAll("[data-effect]").forEach(button => {
+    button.addEventListener("click", () => onSelect(button.dataset.effect));
+  });
+}
+
+function updateLiveEffect() {
+  const video = document.querySelector("#camera-video");
+  const overlay = document.querySelector("#camera-live-overlay");
+  const effect = getEffect(state.activeEffectId);
+  if (video) video.style.filter = effect.liveFilter || "none";
+  if (overlay) overlay.innerHTML = effectLiveOverlayHtml(effect.id);
+  document.querySelectorAll("[data-effect]").forEach(button => {
+    button.classList.toggle("active", button.dataset.effect === effect.id);
+  });
+  const label = document.querySelector("#active-effect-label");
+  if (label) label.textContent = effect.name;
+}
+
+function stopCameraStream() {
+  if (state.cameraStream) {
+    state.cameraStream.getTracks().forEach(track => track.stop());
+    state.cameraStream = null;
+  }
 }
 
 function renderCameraEmpty() {
@@ -249,86 +305,355 @@ function renderCameraEmpty() {
     <div class="camera-stage">
       <div class="camera-placeholder">
         <div class="camera-icon">${icons.camera}</div>
-        <h3>Registre esse momento</h3>
-        <p>Ao tocar abaixo, o celular abrirá a câmera para uma nova foto.</p>
+        <h3>Câmera da festa</h3>
+        <p>Escolha um efeito e abra a câmera. Todos os efeitos ficam disponíveis o tempo todo.</p>
       </div>
     </div>
+    <div class="effect-panel">
+      <div class="effect-panel-head"><span>EFEITO</span><strong id="active-effect-label">${escapeHtml(getEffect(state.activeEffectId).name)}</strong></div>
+      ${effectSelectorHtml()}
+    </div>
     <div class="capture-actions">
-      <button id="take-photo" class="btn btn-primary" type="button">ABRIR CÂMERA</button>
-      <button id="go-feed" class="btn btn-secondary" type="button">VER FEED</button>
+      <button id="take-photo" class="btn btn-primary" type="button">ATIVAR CÂMERA</button>
+      <button id="native-camera" class="btn btn-secondary" type="button">USAR CÂMERA DO CELULAR</button>
     </div>`;
-  document.querySelector("#take-photo").onclick = () => document.querySelector("#camera-input").click();
-  document.querySelector("#go-feed").onclick = () => switchView("feed");
+  bindEffectSelector(effectId => {
+    state.activeEffectId = getEffect(effectId).id;
+    updateLiveEffect();
+  });
+  document.querySelector("#take-photo").onclick = startCamera;
+  document.querySelector("#native-camera").onclick = () => document.querySelector("#camera-input").click();
+}
+
+function renderCameraStarting() {
+  const card = document.querySelector("#camera-card");
+  if (!card) return;
+  card.innerHTML = `<div class="camera-stage"><div class="camera-placeholder"><div class="camera-loader"></div><h3>Abrindo a câmera…</h3><p>Autorize o acesso quando o navegador solicitar.</p></div></div>`;
+}
+
+function renderCameraPermissionError(message = "Não foi possível abrir a câmera dentro do aplicativo.") {
+  stopCameraStream();
+  const card = document.querySelector("#camera-card");
+  if (!card) return;
+  card.innerHTML = `
+    <div class="camera-stage">
+      <div class="camera-placeholder">
+        <div class="camera-icon">${icons.camera}</div>
+        <h3>Use a câmera do celular</h3>
+        <p>${escapeHtml(message)} Você ainda pode tirar a foto pela câmera normal do aparelho e aplicar o efeito logo depois.</p>
+      </div>
+    </div>
+    <div class="effect-panel">
+      <div class="effect-panel-head"><span>EFEITO</span><strong id="active-effect-label">${escapeHtml(getEffect(state.activeEffectId).name)}</strong></div>
+      ${effectSelectorHtml()}
+    </div>
+    <div class="capture-actions">
+      <button id="retry-custom-camera" class="btn btn-secondary" type="button">TENTAR CÂMERA INTERNA</button>
+      <button id="native-camera" class="btn btn-primary" type="button">ABRIR CÂMERA DO CELULAR</button>
+    </div>`;
+  bindEffectSelector(effectId => {
+    state.activeEffectId = getEffect(effectId).id;
+    updateLiveEffect();
+  });
+  document.querySelector("#retry-custom-camera").onclick = startCamera;
+  document.querySelector("#native-camera").onclick = () => document.querySelector("#camera-input").click();
+}
+
+async function startCamera() {
+  if (state.selectedFile || state.cameraStarting || state.view !== "camera") return;
+  if (!navigator.mediaDevices?.getUserMedia) {
+    renderCameraPermissionError("Este navegador não oferece câmera interna compatível.");
+    return;
+  }
+
+  state.cameraStarting = true;
+  stopCameraStream();
+  renderCameraStarting();
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: false,
+      video: {
+        facingMode: { ideal: state.cameraFacingMode },
+        width: { ideal: 3840 },
+        height: { ideal: 2160 },
+      },
+    });
+    if (state.view !== "camera" || state.selectedFile) {
+      stream.getTracks().forEach(track => track.stop());
+      return;
+    }
+    state.cameraStream = stream;
+    renderLiveCamera();
+  } catch (error) {
+    const denied = error?.name === "NotAllowedError" || error?.name === "SecurityError";
+    renderCameraPermissionError(denied
+      ? "O acesso à câmera foi negado pelo navegador."
+      : "A câmera interna não pôde ser iniciada neste aparelho.");
+  } finally {
+    state.cameraStarting = false;
+  }
+}
+
+function renderLiveCamera() {
+  const card = document.querySelector("#camera-card");
+  if (!card || !state.cameraStream) return;
+  const effect = getEffect(state.activeEffectId);
+  card.innerHTML = `
+    <div class="live-camera-stage">
+      <video id="camera-video" autoplay playsinline muted style="filter:${escapeHtml(effect.liveFilter || "none")}"></video>
+      <div id="camera-live-overlay" class="camera-overlay-layer">${effectLiveOverlayHtml(effect.id)}</div>
+      <div id="camera-flash" class="camera-flash"></div>
+      <div class="camera-top-controls">
+        <button id="close-camera" class="camera-round-button" type="button" aria-label="Fechar câmera">×</button>
+        <span class="camera-effect-pill" id="active-effect-label">${escapeHtml(effect.name)}</span>
+        <button id="flip-camera" class="camera-round-button camera-flip" type="button" aria-label="Trocar câmera">↻</button>
+      </div>
+    </div>
+    <div class="effect-panel effect-panel-live">
+      ${effectSelectorHtml(effect.id)}
+    </div>
+    <div class="shutter-bar">
+      <span class="shutter-side-label">${state.cameraFacingMode === "user" ? "FRONTAL" : "TRASEIRA"}</span>
+      <button id="camera-shutter" class="camera-shutter" type="button" aria-label="Tirar foto"><span></span></button>
+      <button id="native-camera" class="shutter-fallback" type="button">CÂMERA<br>NATIVA</button>
+    </div>`;
+
+  const video = document.querySelector("#camera-video");
+  video.srcObject = state.cameraStream;
+  video.play().catch(() => {});
+  bindEffectSelector(effectId => {
+    state.activeEffectId = getEffect(effectId).id;
+    updateLiveEffect();
+  });
+  document.querySelector("#flip-camera").onclick = async () => {
+    state.cameraFacingMode = state.cameraFacingMode === "environment" ? "user" : "environment";
+    await startCamera();
+  };
+  document.querySelector("#close-camera").onclick = () => {
+    stopCameraStream();
+    renderCameraEmpty();
+  };
+  document.querySelector("#camera-shutter").onclick = handleCameraCapture;
+  document.querySelector("#native-camera").onclick = () => {
+    stopCameraStream();
+    document.querySelector("#camera-input").click();
+  };
+}
+
+async function videoFrameToBlob(video) {
+  const width = Math.max(1, Number(video.videoWidth || 1920));
+  const height = Math.max(1, Number(video.videoHeight || 1080));
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d", { alpha: false });
+  if (!ctx) throw new Error("Não foi possível capturar o quadro da câmera.");
+  ctx.drawImage(video, 0, 0, width, height);
+  const blob = await new Promise((resolve, reject) => {
+    canvas.toBlob(result => result ? resolve(result) : reject(new Error("Não foi possível gerar a foto.")), "image/jpeg", 0.95);
+  });
+  canvas.width = 1;
+  canvas.height = 1;
+  return blob;
+}
+
+async function captureOriginalFromCamera() {
+  const stream = state.cameraStream;
+  const video = document.querySelector("#camera-video");
+  if (!stream || !video) throw new Error("A câmera não está pronta.");
+  const track = stream.getVideoTracks()[0];
+  let blob = null;
+
+  if (track && "ImageCapture" in window) {
+    try {
+      const capture = new ImageCapture(track);
+      blob = await capture.takePhoto();
+    } catch {
+      blob = null;
+    }
+  }
+  if (!blob) blob = await videoFrameToBlob(video);
+  if (!blob?.size) throw new Error("A câmera não retornou uma foto válida.");
+  if (blob.size > config.maxPhotoBytes) throw new Error("A foto ultrapassou 30 MB.");
+
+  const extension = blob.type === "image/png" ? "png" : blob.type === "image/webp" ? "webp" : "jpg";
+  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+  return new File([blob], `pedro-momentos-${stamp}.${extension}`, {
+    type: blob.type || "image/jpeg",
+    lastModified: Date.now(),
+  });
+}
+
+async function handleCameraCapture() {
+  if (state.effectProcessing || !state.cameraStream) return;
+  const shutter = document.querySelector("#camera-shutter");
+  const flash = document.querySelector("#camera-flash");
+  if (shutter) shutter.disabled = true;
+  if (flash) {
+    flash.classList.remove("fire");
+    void flash.offsetWidth;
+    flash.classList.add("fire");
+  }
+
+  try {
+    const originalFile = await captureOriginalFromCamera();
+    const effectId = state.activeEffectId;
+    const effectMeta = createEffectMeta(effectId);
+    stopCameraStream();
+    await setCapturedOriginal(originalFile, effectId, effectMeta);
+  } catch (error) {
+    toast(error.message || "Não foi possível tirar a foto.", "error", 5200);
+    if (shutter) shutter.disabled = false;
+  }
 }
 
 async function handleFileInput(event) {
   const file = event.target.files?.[0];
   event.target.value = "";
-  if (!file) return;
+  if (!file) {
+    if (state.view === "camera" && !state.selectedFile) renderCameraEmpty();
+    return;
+  }
   if (!file.type.startsWith("image/")) return toast("A câmera não retornou uma imagem válida.", "error");
   if (file.size > config.maxPhotoBytes) return toast("Essa foto ultrapassa 30 MB.", "error");
 
-  if (state.selectedFile) clearUploadRecovery(state.selectedFile);
+  stopCameraStream();
+  if (state.selectedFile) clearUploadRecovery(state.selectedFile, currentUploadVariantKey());
   await clearSelectedFile(true);
+  const effectId = state.activeEffectId;
+  const effectMeta = createEffectMeta(effectId);
+  await setCapturedOriginal(file, effectId, effectMeta);
+}
+
+async function setCapturedOriginal(file, effectId, effectMeta) {
   state.selectedFile = file;
-  state.selectedUrl = URL.createObjectURL(file);
-  await savePendingCapture(file);
-  renderPhotoPreview();
+  state.activeEffectId = getEffect(effectId).id;
+  state.effectMeta = effectMeta || createEffectMeta(state.activeEffectId);
+  await savePendingCapture({
+    originalFile: state.selectedFile,
+    publishedFile: null,
+    effectId: state.activeEffectId,
+    effectMeta: state.effectMeta,
+  });
+  await applyEffectToSelectedFile(state.activeEffectId, state.effectMeta, false);
+}
+
+function renderEffectProcessing(effectId) {
+  const card = document.querySelector("#camera-card");
+  if (!card) return;
+  const effect = getEffect(effectId);
+  card.innerHTML = `
+    <div class="preview-stage processing-stage">
+      <div class="camera-placeholder"><div class="camera-loader"></div><h3>Preparando ${escapeHtml(effect.name)}…</h3><p>A foto original continua preservada separadamente.</p></div>
+    </div>`;
+}
+
+async function applyEffectToSelectedFile(effectId, fixedMeta = null, regenerateMeta = true) {
+  if (!state.selectedFile || state.effectProcessing) return;
+  const effect = getEffect(effectId);
+  state.effectProcessing = true;
+  state.activeEffectId = effect.id;
+  state.effectMeta = fixedMeta || (regenerateMeta ? createEffectMeta(effect.id) : state.effectMeta || createEffectMeta(effect.id));
+  renderEffectProcessing(effect.id);
+
+  try {
+    const publishedFile = await renderEffectFile(state.selectedFile, effect.id, state.effectMeta);
+    state.publishedFile = publishedFile;
+    if (state.selectedUrl) URL.revokeObjectURL(state.selectedUrl);
+    state.selectedUrl = URL.createObjectURL(publishedFile || state.selectedFile);
+    await savePendingCapture({
+      originalFile: state.selectedFile,
+      publishedFile: state.publishedFile,
+      effectId: state.activeEffectId,
+      effectMeta: state.effectMeta,
+    });
+    renderPhotoPreview();
+  } catch (error) {
+    toast(error.message || "Não foi possível aplicar o efeito.", "error", 5200);
+    state.activeEffectId = "original";
+    state.effectMeta = createEffectMeta("original");
+    state.publishedFile = null;
+    if (state.selectedUrl) URL.revokeObjectURL(state.selectedUrl);
+    state.selectedUrl = URL.createObjectURL(state.selectedFile);
+    await savePendingCapture({ originalFile: state.selectedFile, effectId: "original", effectMeta: state.effectMeta });
+    renderPhotoPreview();
+  } finally {
+    state.effectProcessing = false;
+  }
 }
 
 function renderPhotoPreview() {
   const card = document.querySelector("#camera-card");
   if (!card || !state.selectedFile) return;
+  const effect = getEffect(state.activeEffectId);
+  const publishedSize = state.publishedFile?.size || state.selectedFile.size;
   card.innerHTML = `
     <div class="preview-stage">
       <img src="${state.selectedUrl}" alt="Prévia da foto tirada" />
-      <div class="preview-badge">${escapeHtml(formatBytes(state.selectedFile.size))}</div>
+      <div class="preview-badge">${escapeHtml(effect.name)} · ${escapeHtml(formatBytes(publishedSize))}</div>
       <div id="upload-panel" hidden></div>
+    </div>
+    <div class="effect-panel preview-effect-panel">
+      <div class="effect-panel-head"><span>ESCOLHA O EFEITO</span><strong>${escapeHtml(effect.name)}</strong></div>
+      ${effectSelectorHtml(effect.id)}
     </div>
     <div class="preview-actions">
       <button id="publish-photo" class="btn btn-primary btn-block" type="button">PUBLICAR NA FESTA</button>
       <button id="retake-photo" class="btn btn-secondary btn-block" type="button">TIRAR OUTRA FOTO</button>
     </div>`;
+  bindEffectSelector(effectId => {
+    if (effectId === state.activeEffectId) return;
+    applyEffectToSelectedFile(effectId);
+  });
   document.querySelector("#publish-photo").onclick = publishSelectedPhoto;
   document.querySelector("#retake-photo").onclick = async () => {
-    if (state.selectedFile) clearUploadRecovery(state.selectedFile);
+    if (state.selectedFile) clearUploadRecovery(state.selectedFile, currentUploadVariantKey());
     await clearSelectedFile(true);
     renderCameraEmpty();
-    document.querySelector("#camera-input").click();
+    startCamera();
   };
 }
 
+function currentUploadVariantKey() {
+  return effectUploadKey(state.activeEffectId, state.effectMeta || {});
+}
+
 async function publishSelectedPhoto() {
-  if (!state.selectedFile || state.uploading) return;
+  if (!state.selectedFile || state.uploading || state.effectProcessing) return;
   if (!navigator.onLine) return toast("Você está sem internet. Tente novamente quando a conexão voltar.", "error");
 
   const panel = document.querySelector("#upload-panel");
   const publishButton = document.querySelector("#publish-photo");
   const retakeButton = document.querySelector("#retake-photo");
   const selectedFile = state.selectedFile;
+  const publishedFile = state.publishedFile;
+  const effectId = state.activeEffectId;
+  const effectMeta = state.effectMeta || {};
+  const variantKey = currentUploadVariantKey();
 
   state.uploading = true;
   for (const button of [publishButton, retakeButton]) if (button) button.disabled = true;
+  document.querySelectorAll("[data-effect]").forEach(button => { button.disabled = true; });
   if (publishButton) publishButton.textContent = "PUBLICANDO…";
 
   panel.hidden = false;
   panel.className = "upload-panel";
-  panel.innerHTML = `<div class="upload-card"><h3>Preparando…</h3><p>Não feche esta tela. Se a internet oscilar, a próxima tentativa reaproveita o que já chegou ao Drive.</p><div class="progress-track"><div class="progress-bar"></div></div><strong class="upload-percent">0%</strong></div>`;
+  panel.innerHTML = `<div class="upload-card"><h3>Preparando…</h3><p>O original fica privado e preservado. A versão com efeito é a que aparece no feed.</p><div class="progress-track"><div class="progress-bar"></div></div><strong class="upload-percent">0%</strong></div>`;
   const title = panel.querySelector("h3");
   const description = panel.querySelector("p");
   const bar = panel.querySelector(".progress-bar");
   const percent = panel.querySelector(".upload-percent");
 
   try {
-    const photo = await uploadPhotoToDrive(selectedFile, state.profile.display_name, progress => {
+    await uploadPhotoToDrive(selectedFile, state.profile.display_name, progress => {
       title.textContent = progress.label;
       const value = Math.max(0, Math.min(1, progress.value));
       bar.style.width = `${Math.max(2, value * 100)}%`;
       percent.textContent = `${Math.round(value * 100)}%`;
-    });
+    }, { publishedFile, effectId, effectMeta });
 
     toast("Foto publicada no feed!", "success");
-    clearUploadRecovery(selectedFile);
+    clearUploadRecovery(selectedFile, variantKey);
     await clearSelectedFile(true);
     renderCameraEmpty();
     await loadFeedPage(true, true);
@@ -346,6 +671,7 @@ async function publishSelectedPhoto() {
       publishButton.textContent = "TENTAR PUBLICAR NOVAMENTE";
     }
     if (retakeButton) retakeButton.disabled = false;
+    document.querySelectorAll("[data-effect]").forEach(button => { button.disabled = false; });
     toast(err.message || "Não foi possível publicar a foto.", "error", 6000);
   } finally {
     state.uploading = false;
@@ -356,16 +682,28 @@ async function clearSelectedFile(removePending = false) {
   if (state.selectedUrl) URL.revokeObjectURL(state.selectedUrl);
   state.selectedUrl = null;
   state.selectedFile = null;
+  state.publishedFile = null;
+  state.effectMeta = {};
+  state.effectProcessing = false;
   if (removePending) await clearPendingCapture();
 }
 
 async function restorePendingPhoto() {
   if (state.selectedFile) return;
-  const file = await loadPendingCapture();
+  const pending = await loadPendingCapture();
+  const file = pending?.originalFile;
   if (!file || file.size > config.maxPhotoBytes || !file.type.startsWith("image/")) return;
   state.selectedFile = file;
-  state.selectedUrl = URL.createObjectURL(file);
-  renderPhotoPreview();
+  state.publishedFile = pending.publishedFile || null;
+  state.activeEffectId = getEffect(pending.effectId || "original").id;
+  state.effectMeta = pending.effectMeta || createEffectMeta(state.activeEffectId);
+
+  if (state.activeEffectId !== "original" && !state.publishedFile) {
+    await applyEffectToSelectedFile(state.activeEffectId, state.effectMeta, false);
+  } else {
+    state.selectedUrl = URL.createObjectURL(state.publishedFile || state.selectedFile);
+    renderPhotoPreview();
+  }
   toast("Encontramos uma foto que ainda não terminou de ser publicada. Abra a Câmera para continuar.", "success", 5200);
 }
 
@@ -490,7 +828,7 @@ function renderPhotoCollection(selector, photos, likedSet, { context = "feed", e
     });
   });
   container.querySelectorAll("[data-download]").forEach(button => {
-    button.addEventListener("click", () => handleOriginalDownload(button.dataset.download, button));
+    button.addEventListener("click", () => handlePhotoDownload(button.dataset.download, button.dataset.variant || "published", button));
   });
 }
 
@@ -504,15 +842,19 @@ function safePhotoAspect(photo) {
 function photoCardHtml(photo, liked, context) {
   const preview = escapeHtml(photo.preview_url || "");
   const aspect = safePhotoAspect(photo);
+  const effect = getEffect(photo.effect_id || "original");
+  const effectBadge = effect.id !== "original"
+    ? `<div class="photo-effect">${escapeHtml(effect.name)}</div>`
+    : "";
   const download = context === "mine"
-    ? `<button class="photo-download" type="button" data-download="${photo.id}" aria-label="Baixar foto original">${icons.download}<span>Baixar original</span></button>`
+    ? `<button class="photo-download" type="button" data-download="${photo.id}" data-variant="published" aria-label="Baixar foto publicada">${icons.download}<span>Baixar foto</span></button>`
     : "";
   return `<article class="photo-card" data-photo-card="${photo.id}">
     <div class="photo-frame" style="aspect-ratio:${aspect}">
       <img loading="lazy" decoding="async" src="${preview}" alt="Foto publicada por ${escapeHtml(photo.display_name)}" data-photo-open="${photo.id}" data-context="${context}" />
     </div>
     <div class="photo-card-body">
-      <div class="photo-meta"><p class="photo-author">Publicado por <strong>${escapeHtml(photo.display_name)}</strong></p><div class="photo-time">${escapeHtml(formatRelativeTime(photo.created_at))}</div>${download}</div>
+      <div class="photo-meta"><p class="photo-author">Publicado por <strong>${escapeHtml(photo.display_name)}</strong></p><div class="photo-time">${escapeHtml(formatRelativeTime(photo.created_at))}</div>${effectBadge}${download}</div>
       <button class="like-button ${liked ? "liked" : ""}" type="button" data-like="${photo.id}" aria-label="${liked ? "Remover curtida" : "Curtir foto"}">${icons.heart}<span class="like-count">${Number(photo.likes_count || 0)}</span></button>
     </div>
   </article>`;
@@ -570,11 +912,15 @@ function openPhotoModal(photoId, allowDownload) {
   const root = document.querySelector("#modal-root");
   const photo = findPhotoEverywhere(photoId)[0];
   const previewUrl = photo?.preview_url || `/api/media?photo=${encodeURIComponent(photoId)}`;
+  const effect = getEffect(photo?.effect_id || "original");
+  const canDownloadOriginal = Boolean(photo?.published_drive_id);
   root.innerHTML = `<div class="modal-backdrop"><div class="photo-modal">
     <button class="modal-close" type="button" aria-label="Fechar">×</button>
     <img src="${escapeHtml(previewUrl)}" alt="Foto da festa" />
+    ${effect.id !== "original" ? `<div class="modal-effect-name">${escapeHtml(effect.name)}</div>` : ""}
     <div class="modal-actions">
-      ${allowDownload ? `<button id="download-original" class="btn btn-primary" type="button">BAIXAR FOTO ORIGINAL</button>` : ""}
+      ${allowDownload ? `<button class="btn btn-primary" type="button" data-modal-download="published">BAIXAR FOTO PUBLICADA</button>` : ""}
+      ${allowDownload && canDownloadOriginal ? `<button class="btn btn-secondary" type="button" data-modal-download="original">BAIXAR ORIGINAL</button>` : ""}
       <button id="close-original" class="btn btn-secondary" type="button">FECHAR</button>
     </div>
   </div></div>`;
@@ -583,30 +929,30 @@ function openPhotoModal(photoId, allowDownload) {
   root.querySelector(".modal-backdrop").addEventListener("click", event => {
     if (event.target.classList.contains("modal-backdrop")) closePhotoModal();
   });
-  if (allowDownload) {
-    root.querySelector("#download-original").onclick = event => handleOriginalDownload(photoId, event.currentTarget);
-  }
+  root.querySelectorAll("[data-modal-download]").forEach(button => {
+    button.addEventListener("click", () => handlePhotoDownload(photoId, button.dataset.modalDownload, button));
+  });
 }
 
 function closePhotoModal() {
   document.querySelector("#modal-root").innerHTML = "";
 }
 
-async function handleOriginalDownload(photoId, button) {
+async function handlePhotoDownload(photoId, variant, button) {
   if (state.downloading) return;
   const photo = state.myPhotos.find(item => item.id === photoId);
-  if (!photo) return toast("O download do original só está disponível em Meus cliques.", "error");
+  if (!photo) return toast("O download só está disponível em Meus cliques.", "error");
   state.downloading = true;
-  const originalText = button?.textContent || "BAIXAR FOTO ORIGINAL";
+  const originalText = button?.textContent || "BAIXAR FOTO";
   if (button) button.disabled = true;
   try {
-    const { blob, filename } = await downloadOriginalPhoto(photo, ratio => {
+    const { blob, filename, variant: actualVariant } = await downloadPhoto(photo, variant, ratio => {
       if (button) button.textContent = `BAIXANDO ${Math.round(ratio * 100)}%`;
     });
     downloadBlob(blob, filename);
-    toast("Foto original enviada para os downloads do aparelho.", "success");
+    toast(actualVariant === "published" ? "Foto publicada enviada para os downloads." : "Foto original enviada para os downloads.", "success");
   } catch (err) {
-    toast(err.message || "Não foi possível baixar a foto original.", "error", 5200);
+    toast(err.message || "Não foi possível baixar a foto.", "error", 5200);
   } finally {
     state.downloading = false;
     if (button) {
@@ -675,7 +1021,9 @@ async function bootstrapApp() {
 
 function renderAdminRecentPhotos(photos = []) {
   if (!photos.length) return `<div class="empty-card compact">Nenhuma publicação encontrada.</div>`;
-  return photos.map(photo => `
+  return photos.map(photo => {
+    const effect = getEffect(photo.effect_id || "original");
+    return `
     <article class="admin-photo-row" data-admin-photo="${photo.id}">
       ${photo.published
         ? `<img src="/api/media?photo=${encodeURIComponent(photo.id)}" alt="Prévia" loading="lazy" />`
@@ -683,13 +1031,14 @@ function renderAdminRecentPhotos(photos = []) {
       <div class="admin-photo-info">
         <strong>${escapeHtml(photo.display_name)}</strong>
         <span>${escapeHtml(new Date(photo.created_at).toLocaleString("pt-BR"))}</span>
-        <small>${formatBytes(Number(photo.size_bytes || 0))} · ${Number(photo.likes_count || 0)} curtidas · ${photo.published ? "visível" : "oculta"}</small>
+        <small>${formatBytes(Number(photo.size_bytes || 0))} · ${Number(photo.likes_count || 0)} curtidas · ${escapeHtml(effect.name)} · ${photo.published ? "visível" : "oculta"}</small>
       </div>
       <div class="admin-photo-actions">
         <button class="btn btn-secondary btn-small" data-admin-action="${photo.published ? "hide" : "show"}" data-photo-id="${photo.id}" type="button">${photo.published ? "OCULTAR" : "MOSTRAR"}</button>
         <button class="btn btn-danger btn-small" data-admin-action="delete" data-photo-id="${photo.id}" type="button">EXCLUIR</button>
       </div>
-    </article>`).join("");
+    </article>`;
+  }).join("");
 }
 
 function renderDriveAdmin() {

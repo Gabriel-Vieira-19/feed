@@ -16,7 +16,7 @@ export default async function handler(req, res) {
     const supabase = getAdminSupabase();
     const { data: photo, error } = await supabase
       .from("photos")
-      .select("id,original_drive_id,preview_drive_id,published")
+      .select("id,original_drive_id,preview_drive_id,published_drive_id,published")
       .eq("id", photoId)
       .maybeSingle();
     if (error) throw error;
@@ -42,6 +42,7 @@ export default async function handler(req, res) {
     await Promise.allSettled([
       deleteDriveFile(accessToken, photo.original_drive_id),
       deleteDriveFile(accessToken, photo.preview_drive_id),
+      photo.published_drive_id ? deleteDriveFile(accessToken, photo.published_drive_id) : Promise.resolve(false),
     ]);
     return json(res, 200, { ok: true, action: "delete" });
   } catch (error) {

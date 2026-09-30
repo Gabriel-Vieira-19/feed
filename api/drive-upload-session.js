@@ -4,6 +4,7 @@ import { requireUser } from "../server/supabase-admin.js";
 
 const MAX_ORIGINAL_BYTES = 30 * 1024 * 1024;
 const MAX_PREVIEW_BYTES = 2 * 1024 * 1024;
+const MAX_PUBLISHED_BYTES = 15 * 1024 * 1024;
 
 function isUuid(value) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value || ""));
@@ -32,11 +33,14 @@ export default async function handler(req, res) {
     if (kind === "preview" && size > MAX_PREVIEW_BYTES) {
       const error = new Error("A prévia ultrapassa 2 MB."); error.statusCode = 413; throw error;
     }
-    if (!["original", "preview"].includes(kind)) {
+    if (kind === "published" && size > MAX_PUBLISHED_BYTES) {
+      const error = new Error("A foto com efeito ultrapassa 15 MB."); error.statusCode = 413; throw error;
+    }
+    if (!["original", "preview", "published"].includes(kind)) {
       const error = new Error("Tipo de upload inválido."); error.statusCode = 400; throw error;
     }
-    if (kind === "preview" && mimeType !== "image/jpeg") {
-      const error = new Error("A prévia precisa estar em JPEG."); error.statusCode = 400; throw error;
+    if (["preview", "published"].includes(kind) && mimeType !== "image/jpeg") {
+      const error = new Error(kind === "preview" ? "A prévia precisa estar em JPEG." : "A foto com efeito precisa estar em JPEG."); error.statusCode = 400; throw error;
     }
     if (kind === "original" && !(mimeType.startsWith("image/") || mimeType === "application/octet-stream")) {
       const error = new Error("O arquivo precisa ser uma imagem."); error.statusCode = 400; throw error;
@@ -44,7 +48,7 @@ export default async function handler(req, res) {
 
     const accessToken = await getDriveAccessToken();
     const folders = await ensureDriveFolders(accessToken);
-    const folderId = kind === "original" ? folders.originalsId : folders.previewsId;
+    const folderId = kind === "original" ? folders.originalsId : kind === "published" ? folders.publishedId : folders.previewsId;
 
     // Idempotência: se este upload já terminou numa tentativa anterior,
     // reaproveitamos o arquivo existente em vez de criar outra cópia no Drive.

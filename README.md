@@ -1,164 +1,158 @@
-# Pedro 18 — Momentos
+# Pedro 18 — Momentos / Filtros V1
 
-Aplicativo web de fotos para a festa. Esta versão final usa **Google Drive para os arquivos**, **Supabase para usuários/feed/curtidas** e **Vercel para o site + rotas de API**.
+Aplicativo web de fotos da festa usando **Google Drive** para arquivos, **Supabase** para usuários/feed/curtidas e **Vercel** para o frontend + API.
 
-## O que o convidado vê
+Esta edição adiciona a primeira versão da **câmera personalizada com filtros e molduras próprias da festa**, sem categorias bloqueadas e sem desbloqueio por horário: todos os efeitos ficam disponíveis o tempo todo.
 
-- entra apenas com um nome;
-- abre a câmera normal do celular;
-- tira uma foto nova durante a festa;
-- vê a prévia e publica no feed;
-- curte fotos;
-- ordena o feed por mais recentes, mais antigas, mais curtidas, menos curtidas, usuários A–Z e usuários Z–A;
-- vê suas próprias publicações em **Meus cliques**;
-- baixa a foto original **somente em Meus cliques**.
+## Efeitos disponíveis nesta versão
 
-Não há galeria para publicação, filtros, comentários nem legenda editável. O texto “Publicado por …” é automático.
+- Original;
+- Dourado;
+- Quente;
+- Frio;
+- Arquivo 18;
+- Flagra da Festa;
+- A família NÃO vai ver;
+- Memória Desbloqueada;
+- Raridade da Foto;
+- Detector de Histórias;
+- Câmera Descartável 18;
+- Primeira Noite dos 18.
 
-## Como as fotos são guardadas
+Os efeitos **Raridade da Foto**, **Detector de Histórias**, **Memória Desbloqueada**, **Arquivo 18** e **Flagra da Festa** geram detalhes aleatórios no momento da captura. O resultado fica congelado na foto publicada.
+
+## Câmera
+
+Ao entrar na aba Câmera, o aplicativo tenta abrir uma câmera interna via navegador. O convidado pode:
+
+- visualizar o efeito antes da captura;
+- trocar entre câmera frontal e traseira;
+- fotografar dentro do app;
+- trocar o efeito depois da foto, antes de publicar;
+- usar a câmera nativa do celular como fallback quando a câmera interna não estiver disponível ou a permissão for negada.
+
+A interface não possui botão de galeria.
+
+## Original preservado + versão publicada
+
+A arquitetura agora separa três arquivos:
 
 ```text
 CELULAR
   │
-  ├─ original ───────────────→ Google Drive / Originais
+  ├─ original privado ─────────→ Google Drive / Originais
   │
-  └─ prévia de até 2 MB ────→ Google Drive / Prévias
-                                  │
-                                  ↓
-                              feed do site
-
-Supabase guarda somente os dados:
-nome, ID da foto, curtidas, horário, IDs do Drive etc.
+  ├─ foto com efeito ──────────→ Google Drive / Publicados
+  │                               (somente quando existe efeito)
+  │
+  └─ prévia de até 2 MB ───────→ Google Drive / Prévias
+                                   │
+                                   ↓
+                               feed do site
 ```
 
-A foto original **não é redimensionada nem recomprimida**. A prévia é um segundo arquivo leve, criado apenas para o feed.
+O arquivo original **não recebe o filtro**. Quando um efeito é usado, o app gera separadamente um JPEG de alta qualidade, limitado a 2600 px no maior lado, para a versão publicada. A prévia continua sendo um arquivo leve para o feed.
 
-## Privacidade dos originais
+Em **Meus cliques** o dono da publicação pode baixar:
 
-Os originais ficam privados no Google Drive. O aplicativo não cria mais permissão “qualquer pessoa com o link”.
+- **Baixar foto**: versão publicada com efeito; se a foto não tiver efeito, usa o original;
+- no modal, quando houver efeito: **Baixar original**.
 
-O download é feito em blocos privados de até 3 MB e o backend verifica se a foto pertence ao usuário atual. Por isso o botão de download só existe em **Meus cliques** e a própria API também bloqueia downloads de fotos de outras pessoas.
+Outros convidados não têm acesso ao download privado.
 
-Se você já usou uma versão antiga que tornou originais públicos, abra `/?admin=drive` e use **PRIVATIZAR ORIGINAIS ANTIGOS** uma vez.
+## Google Drive
 
-## Proteção contra duplicação e falhas
-
-- vários toques rápidos em publicar não iniciam uploads paralelos;
-- o mesmo arquivo mantém um `upload_group_id` até a publicação terminar;
-- se original ou prévia já chegaram ao Drive, uma nova tentativa os reaproveita;
-- se a página for recarregada, a foto pendente pode ser restaurada do armazenamento local do navegador;
-- o backend continua idempotente: uma publicação já concluída não é criada novamente.
-
-## Limpeza automática
-
-Uploads que chegaram ao Drive, mas nunca viraram uma publicação, são considerados abandonados após 8 horas.
-
-Existe:
-
-- botão manual no painel administrativo;
-- Vercel Cron diário em `/api/cleanup-abandoned`.
-
-Para o Cron funcionar, configure `CRON_SECRET` na Vercel.
-
-## Painel administrativo
-
-Abra:
+O aplicativo cria ou reaproveita:
 
 ```text
-SUA_URL/?admin=drive
+Pedro Momentos/
+├── Originais/
+├── Publicados/
+└── Prévias/
 ```
 
-Com a `ADMIN_KEY`, o painel permite:
+Os arquivos continuam privados. Não é criada permissão pública “qualquer pessoa com o link”.
 
-- conectar/reconectar o Drive;
-- visualizar total de fotos, usuários, curtidas, fotos ocultas e armazenamento usado;
-- ocultar e restaurar publicações;
-- excluir uma publicação do Supabase e os dois arquivos do Drive;
-- limpar uploads abandonados;
-- privatizar originais criados por versões antigas;
-- gerar e baixar um QR Code do aplicativo.
+## Atualização da versão FINAL/Hobby que já está funcionando
 
-## OAuth antes da festa
+**Não rode `schema.sql` novamente.**
 
-Durante desenvolvimento o Google OAuth pode ficar em modo **Testing**. Antes da festa, altere a tela de consentimento para **In production / Em produção** e reconecte o Drive. O modo de teste pode gerar refresh tokens com validade limitada.
-
-## Atualizando a versão 2.2 já instalada
-
-Se você já tem o Supabase funcionando com a v2.2, **não rode `schema.sql` de novo**.
-
-Execute apenas:
+Antes de publicar este código, execute no SQL Editor do Supabase:
 
 ```text
-supabase/upgrade_v2_2_to_final.sql
+supabase/upgrade_final_to_filters_v1.sql
 ```
 
-Depois atualize o GitHub/Vercel e adicione a nova variável privada:
+Essa migração apenas acrescenta os campos necessários para a versão publicada e para os efeitos; usuários, fotos, curtidas, conexão do Drive e configurações existentes são preservados.
 
-```text
-CRON_SECRET
-```
+Depois substitua o código no GitHub e aguarde o novo deploy da Vercel.
 
-Por fim, abra `/?admin=drive` e clique em **PRIVATIZAR ORIGINAIS ANTIGOS**.
+Não existem novas variáveis de ambiente nesta versão.
+
+## Vercel Hobby
+
+A pasta `api/` continua contendo exatamente **12 funções**. Os módulos compartilhados ficam em `server/`, portanto esta versão preserva a estrutura que já funcionou no plano Hobby do projeto.
+
+## Recuperação e duplicação
+
+- uma captura pendente é salva localmente no navegador;
+- o efeito escolhido e seu resultado aleatório também são preservados;
+- uma nova tentativa reaproveita arquivos já enviados;
+- o `upload_group_id` inclui a variação do efeito para evitar conflito se a mesma captura for publicada com outro resultado;
+- uploads abandonados continuam sendo removidos após 8 horas.
+
+## Ainda não incluído
+
+Esta é a **Fase 1** dos filtros. Ainda não entram nesta versão:
+
+- colagens;
+- boomerang;
+- filtros faciais/rastreamento de rosto;
+- recortes/fotos do Pedro;
+- efeitos com IA.
+
+A estrutura foi mantida modular para essas próximas etapas.
 
 ## Implantação
 
-Siga `docs/DEPLOY_FACIL.md`.
+Para atualizar a versão que já está online, siga:
 
-Resumo:
+```text
+docs/DEPLOY_FACIL.md
+```
 
-1. Supabase;
-2. GitHub + Vercel;
-3. Google Drive API + OAuth;
-4. variáveis privadas na Vercel;
-5. conectar a conta Google;
-6. colocar o OAuth em produção antes da festa;
-7. executar `docs/TESTES.md`.
+Depois execute:
+
+```text
+docs/TESTES.md
+```
 
 ## Estrutura principal
 
 ```text
-pedro-momentos-google-drive-final/
-├── api/
-│   ├── admin-dashboard.js
-│   ├── admin-drive-auth.js
-│   ├── admin-drive-callback.js
-│   ├── admin-drive-status.js
-│   ├── admin-photo-action.js
-│   ├── admin-private-originals.js
-│   ├── cleanup-abandoned.js
-│   ├── drive-upload-proxy.js
-│   ├── drive-upload-session.js
-│   ├── media.js
-│   ├── original-chunk.js
-│   └── photo-publish.js
-├── server/
-│   ├── google-drive.js
-│   ├── http.js
-│   └── supabase-admin.js
-├── docs/
-├── public/
-├── scripts/
-├── src/
-│   ├── lib/
-│   │   ├── drive.js
-│   │   ├── pending-upload.js
-│   │   ├── supabase.js
-│   │   └── utils.js
-│   ├── config.js
-│   ├── main.js
-│   └── styles.css
-├── supabase/
-│   ├── schema.sql
-│   └── upgrade_v2_2_to_final.sql
-├── .env.example
-├── index.html
-├── package.json
-└── vercel.json
+api/                         # 12 Serverless Functions
+server/                      # módulos backend compartilhados
+docs/
+public/
+scripts/
+src/
+├── lib/
+│   ├── drive.js
+│   ├── effects.js           # motor dos efeitos
+│   ├── pending-upload.js
+│   ├── supabase.js
+│   └── utils.js
+├── config.js
+├── main.js
+└── styles.css
+supabase/
+├── schema.sql
+├── upgrade_v2_2_to_final.sql
+└── upgrade_final_to_filters_v1.sql
+index.html
+package.json
+vercel.json
 ```
-
-## Compatibilidade com Vercel Hobby
-
-Esta edição mantém exatamente **12 Serverless Functions** dentro de `api/`, respeitando o limite informado pela Vercel para o plano Hobby. Os módulos compartilhados ficam em `server/`, fora de `api/`, para não serem publicados como funções separadas. O endpoint de diagnóstico `/api/health` foi removido por não ser necessário para a aplicação.
 
 ## Verificação local
 
