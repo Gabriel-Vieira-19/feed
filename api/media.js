@@ -1,6 +1,6 @@
-import { fetchDriveMedia, getDriveAccessToken } from "./_lib/google-drive.js";
-import { json, methodNotAllowed } from "./_lib/http.js";
-import { getAdminSupabase } from "./_lib/supabase-admin.js";
+import { fetchDriveMedia, getDriveAccessToken } from "../server/google-drive.js";
+import { json, methodNotAllowed } from "../server/http.js";
+import { getAdminSupabase } from "../server/supabase-admin.js";
 
 export default async function handler(req, res) {
   if (req.method !== "GET") return methodNotAllowed(res, ["GET"]);

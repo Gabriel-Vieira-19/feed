@@ -119,7 +119,6 @@ Resumo:
 ```text
 pedro-momentos-google-drive-final/
 ├── api/
-│   ├── _lib/
 │   ├── admin-dashboard.js
 │   ├── admin-drive-auth.js
 │   ├── admin-drive-callback.js
@@ -129,10 +128,13 @@ pedro-momentos-google-drive-final/
 │   ├── cleanup-abandoned.js
 │   ├── drive-upload-proxy.js
 │   ├── drive-upload-session.js
-│   ├── health.js
 │   ├── media.js
 │   ├── original-chunk.js
 │   └── photo-publish.js
+├── server/
+│   ├── google-drive.js
+│   ├── http.js
+│   └── supabase-admin.js
 ├── docs/
 ├── public/
 ├── scripts/
@@ -153,6 +155,10 @@ pedro-momentos-google-drive-final/
 ├── package.json
 └── vercel.json
 ```
+
+## Compatibilidade com Vercel Hobby
+
+Esta edição mantém exatamente **12 Serverless Functions** dentro de `api/`, respeitando o limite informado pela Vercel para o plano Hobby. Os módulos compartilhados ficam em `server/`, fora de `api/`, para não serem publicados como funções separadas. O endpoint de diagnóstico `/api/health` foi removido por não ser necessário para a aplicação.
 
 ## Verificação local
 

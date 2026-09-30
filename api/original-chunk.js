@@ -1,6 +1,6 @@
-import { fetchDriveMediaRange, getDriveAccessToken } from "./_lib/google-drive.js";
-import { handleError, json, methodNotAllowed } from "./_lib/http.js";
-import { getAdminSupabase, requireUser } from "./_lib/supabase-admin.js";
+import { fetchDriveMediaRange, getDriveAccessToken } from "../server/google-drive.js";
+import { handleError, json, methodNotAllowed } from "../server/http.js";
+import { getAdminSupabase, requireUser } from "../server/supabase-admin.js";
 
 const MAX_CHUNK_BYTES = 3 * 1024 * 1024;
 const MAX_ORIGINAL_BYTES = 30 * 1024 * 1024;

@@ -159,7 +159,6 @@ Antes da festa, faça no mínimo:
 - Google OAuth em **Em produção**;
 - Drive conectado;
 - espaço livre suficiente no Drive;
-- `/api/health` responde `driveConnected: true`;
 - painel administrativo acessível;
 - QR Code impresso/testado;
 - uma publicação real feita por Android;

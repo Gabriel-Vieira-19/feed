@@ -1,6 +1,6 @@
-import { deleteDriveFile, getDriveAccessToken, listAppFilesCreatedBefore } from "./_lib/google-drive.js";
-import { handleError, json, methodNotAllowed, requireCronOrAdmin } from "./_lib/http.js";
-import { getAdminSupabase } from "./_lib/supabase-admin.js";
+import { deleteDriveFile, getDriveAccessToken, listAppFilesCreatedBefore } from "../server/google-drive.js";
+import { handleError, json, methodNotAllowed, requireCronOrAdmin } from "../server/http.js";
+import { getAdminSupabase } from "../server/supabase-admin.js";
 
 const ABANDONED_AFTER_HOURS = 8;
 
