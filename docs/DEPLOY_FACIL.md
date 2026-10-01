@@ -1,10 +1,10 @@
-# Deploy fácil — Filtros V2
+# Deploy fácil — Filtros V3
 
 Este roteiro considera que a versão FINAL compatível com Vercel Hobby já está funcionando.
 
 ## 1. Supabase
 
-Se a versão **Filtros V1 já está funcionando**, não execute nenhum SQL novo para a V2.
+Se a versão **Filtros V1 ou V2 já está funcionando**, não execute nenhum SQL novo para a V3.
 
 Se estiver vindo diretamente da versão FINAL sem filtros, execute uma única vez:
 
@@ -12,7 +12,7 @@ Se estiver vindo diretamente da versão FINAL sem filtros, execute uma única ve
 supabase/upgrade_final_to_filters_v1.sql
 ```
 
-A V2 reutiliza as mesmas colunas de mídia e efeitos. **Não execute `schema.sql` novamente.**
+A V3 reutiliza as mesmas colunas de mídia e efeitos. **Não execute `schema.sql` novamente.**
 
 ## 2. Atualize o GitHub
 

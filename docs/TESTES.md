@@ -1,4 +1,4 @@
-# Testes — Filtros V2
+# Testes — Filtros V3
 
 Faça pelo menos um ciclo completo em Android e outro em iPhone antes de considerar esta fase pronta.
 
@@ -155,3 +155,18 @@ Também confirme que continuam funcionando:
 - Conferir em tempo real Arquivo 18, Flagra, Confidencial, Memória, Descartável, Primeira Noite, Editorial, Filme 35 e Garça 26.12.
 - Testar Dourado, Quente, Âmbar, Champagne, Rosé, Frio, Blue Hour e Noturno nas câmeras frontal e traseira.
 - Repetir os testes em Android e iPhone, incluindo orientação vertical e retorno do app após bloquear/desbloquear a tela.
+
+
+## Testes específicos da V3
+
+- abrir a câmera e confirmar que cada capa mostra nome e explicação curta;
+- rolar até filtros distantes, selecionar e confirmar que a faixa não volta ao início;
+- testar Mel, Tungstênio, Gelo e Crepúsculo;
+- testar Flagra com um rosto central e mover o rosto para os lados;
+- repetir Flagra em aparelho sem FaceDetector e confirmar que o fallback não quebra a captura;
+- capturar Raridade várias vezes e confirmar elixir independente da raridade;
+- encontrar/forçar teste de Lendária e conferir formato hexagonal + aura multicolorida;
+- publicar Arquivo, Flagra, Confidencial, Memória, Raridade, Detector, Descartável e Primeira Noite e confirmar movimento no feed;
+- abrir cada uma no modal e confirmar que a camada animada acompanha a imagem;
+- verificar que o download continua sendo JPEG estático com o desenho principal do filtro;
+- testar Android/Chrome e iPhone/Safari, especialmente o Flagra.

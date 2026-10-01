@@ -1,171 +1,93 @@
-# Pedro 18 — Momentos / Filtros V2
+# Pedro 18 — Momentos / Filtros V3
 
-## Novidades da V2
+Aplicativo web de fotos da festa usando **Google Drive** para arquivos, **Supabase** para usuários/feed/curtidas e **Vercel** para frontend + API.
 
-- câmera interna em modo imersivo, ocupando toda a tela acima da navegação inferior;
-- filtros de temperatura visíveis em tempo real: Dourado, Quente, Âmbar, Champagne, Rosé, Frio, Blue Hour e Noturno;
-- molduras também visíveis antes do clique;
-- Raridade, Detector de Histórias, Arquivo 18, Flagra e Memória geram o resultado na câmera e preservam o mesmo resultado na foto capturada;
-- novas molduras Editorial 26.12, Filme 35 e Garça · 26.12;
-- capas dos filtros redesenhadas para representar visualmente o resultado;
-- posição horizontal da lista de filtros é preservada ao trocar efeitos, inclusive na prévia;
-- não há desbloqueios, horários ou categorias progressivas: todos os efeitos ficam disponíveis.
+## Novidades da V3
 
-**Quem já executou `upgrade_final_to_filters_v1.sql` não precisa executar nenhum SQL adicional para a V2.**
+- capas dos filtros redesenhadas novamente: cada efeito mostra **nome + explicação curta + miniatura que representa o resultado**;
+- novos filtros de temperatura: **Mel, Tungstênio, Gelo e Crepúsculo**, além dos já existentes;
+- **Flagra da Festa** ganhou óculos pixelados estilo *thug life*, flash e tentativa de acompanhar o maior rosto detectado na câmera;
+- o Flagra também grava os óculos na foto publicada; quando a API nativa de detecção facial não existir, usa uma posição central de fallback;
+- **Raridade da Foto** agora transforma a foto em uma carta: raridade Comum/Rara/Épica/Lendária, custo de elixir aleatório e moldura própria;
+- a **Lendária** usa formato hexagonal e aura multicolorida animada;
+- o custo de elixir é sorteado de **1 a 9** e não depende da raridade;
+- Arquivo 18, Flagra, Confidencial, Memória, Raridade, Detector, Descartável e Primeira Noite agora têm movimento ao vivo;
+- no feed e no modal, esses efeitos continuam animados sobre o JPEG publicado, dando sensação de GIF sem transformar todas as fotos em arquivos GIF pesados;
+- a lista horizontal continua preservando a posição ao trocar filtros.
 
-Aplicativo web de fotos da festa usando **Google Drive** para arquivos, **Supabase** para usuários/feed/curtidas e **Vercel** para o frontend + API.
+**Quem já executou `upgrade_final_to_filters_v1.sql` não precisa executar SQL adicional para a V3.**
 
-Esta edição adiciona a primeira versão da **câmera personalizada com filtros e molduras próprias da festa**, sem categorias bloqueadas e sem desbloqueio por horário: todos os efeitos ficam disponíveis o tempo todo.
+## Efeitos de temperatura
 
-## Efeitos disponíveis nesta versão
+Original, Dourado, Quente, Âmbar, Champagne, Rosé, Mel, Tungstênio, Frio, Gelo, Blue Hour, Crepúsculo e Noturno.
 
-- Original;
-- Dourado;
-- Quente;
-- Frio;
-- Arquivo 18;
-- Flagra da Festa;
-- A família NÃO vai ver;
-- Memória Desbloqueada;
-- Raridade da Foto;
-- Detector de Histórias;
-- Câmera Descartável 18;
-- Primeira Noite dos 18.
+## Molduras e efeitos próprios da festa
 
-Os efeitos **Raridade da Foto**, **Detector de Histórias**, **Memória Desbloqueada**, **Arquivo 18** e **Flagra da Festa** geram detalhes aleatórios no momento da captura. O resultado fica congelado na foto publicada.
+Arquivo 18, Flagra da Festa, A família NÃO vai ver, Memória Desbloqueada, Raridade da Foto, Detector de Histórias, Câmera Descartável 18, Primeira Noite dos 18, Editorial 26.12, Filme 35 e Garça · 26.12.
 
-## Câmera
+## Raridade da Foto
 
-Ao entrar na aba Câmera, o aplicativo tenta abrir uma câmera interna via navegador. O convidado pode:
+A raridade é sorteada antes da captura e permanece na publicação:
 
-- visualizar o efeito antes da captura;
-- trocar entre câmera frontal e traseira;
-- fotografar dentro do app;
-- trocar o efeito depois da foto, antes de publicar;
-- usar a câmera nativa do celular como fallback quando a câmera interna não estiver disponível ou a permissão for negada.
+- Comum;
+- Rara;
+- Épica;
+- Lendária.
 
-A interface não possui botão de galeria.
+O elixir é sorteado separadamente. A Lendária usa moldura hexagonal com brilho multicolorido em movimento. A implementação reproduz a leitura visual das cartas de batalha diretamente com CSS/Canvas; não depende de imagens externas durante a festa.
+
+## Flagra da Festa
+
+Na câmera interna, o app tenta usar a API `FaceDetector` do navegador para posicionar os óculos no maior rosto detectado. Se o aparelho não oferecer essa API ou a detecção falhar, o filtro continua funcionando com os óculos centralizados. O JPEG final também tenta detectar o rosto antes de renderizar os óculos.
+
+Isso deve ser testado principalmente em Android/Chrome e iPhone/Safari, pois o suporte à detecção facial nativa varia entre navegadores.
+
+## Movimento nas publicações
+
+A foto salva no Drive continua sendo um JPEG. O movimento é renderizado no navegador como uma camada leve sobre a foto do feed/modal:
+
+- Arquivo 18: scanner;
+- Flagra: flash periódico;
+- Confidencial: carimbo/tarja;
+- Memória: aviso de memória desbloqueada;
+- Raridade: aura da raridade;
+- Detector: linha de varredura;
+- Descartável: vazamento de luz e grão;
+- Primeira Noite: brilhos discretos.
+
+Assim preservamos tamanho de arquivo baixo e não precisamos converter todas as fotos para GIF/vídeo.
 
 ## Original preservado + versão publicada
-
-A arquitetura agora separa três arquivos:
 
 ```text
 CELULAR
   │
   ├─ original privado ─────────→ Google Drive / Originais
-  │
   ├─ foto com efeito ──────────→ Google Drive / Publicados
-  │                               (somente quando existe efeito)
-  │
-  └─ prévia de até 2 MB ───────→ Google Drive / Prévias
-                                   │
-                                   ↓
-                               feed do site
+  └─ prévia leve ──────────────→ Google Drive / Prévias
 ```
 
-O arquivo original **não recebe o filtro**. Quando um efeito é usado, o app gera separadamente um JPEG de alta qualidade, limitado a 2600 px no maior lado, para a versão publicada. A prévia continua sendo um arquivo leve para o feed.
+O original não recebe filtro. A versão publicada com efeito é um JPEG separado. Em **Meus cliques**, o dono continua podendo baixar a versão publicada e, quando disponível, o original.
 
-Em **Meus cliques** o dono da publicação pode baixar:
+## Atualização a partir da V2
 
-- **Baixar foto**: versão publicada com efeito; se a foto não tiver efeito, usa o original;
-- no modal, quando houver efeito: **Baixar original**.
-
-Outros convidados não têm acesso ao download privado.
-
-## Google Drive
-
-O aplicativo cria ou reaproveita:
-
-```text
-Pedro Momentos/
-├── Originais/
-├── Publicados/
-└── Prévias/
-```
-
-Os arquivos continuam privados. Não é criada permissão pública “qualquer pessoa com o link”.
-
-## Atualização da versão FINAL/Hobby que já está funcionando
-
-**Não rode `schema.sql` novamente.**
-
-Antes de publicar este código, execute no SQL Editor do Supabase:
-
-```text
-supabase/upgrade_final_to_filters_v1.sql
-```
-
-Essa migração apenas acrescenta os campos necessários para a versão publicada e para os efeitos; usuários, fotos, curtidas, conexão do Drive e configurações existentes são preservados.
-
-Depois substitua o código no GitHub e aguarde o novo deploy da Vercel.
-
-Não existem novas variáveis de ambiente nesta versão.
+1. Substitua o código do GitHub pelo conteúdo desta V3.
+2. Aguarde o deploy da Vercel.
+3. Não execute `schema.sql` novamente.
+4. Não há nova variável de ambiente.
+5. Faça os testes de `docs/TESTES.md`.
 
 ## Vercel Hobby
 
-A pasta `api/` continua contendo exatamente **12 funções**. Os módulos compartilhados ficam em `server/`, portanto esta versão preserva a estrutura que já funcionou no plano Hobby do projeto.
-
-## Recuperação e duplicação
-
-- uma captura pendente é salva localmente no navegador;
-- o efeito escolhido e seu resultado aleatório também são preservados;
-- uma nova tentativa reaproveita arquivos já enviados;
-- o `upload_group_id` inclui a variação do efeito para evitar conflito se a mesma captura for publicada com outro resultado;
-- uploads abandonados continuam sendo removidos após 8 horas.
+`api/` continua com exatamente **12 Serverless Functions**. Os módulos compartilhados permanecem em `server/`.
 
 ## Ainda não incluído
 
-Esta é a **Fase 1** dos filtros. Ainda não entram nesta versão:
-
-- colagens;
+- colagem;
 - boomerang;
-- filtros faciais/rastreamento de rosto;
-- recortes/fotos do Pedro;
+- rastreamento facial por biblioteca própria/MediaPipe para aparelhos sem `FaceDetector`;
+- fotos/recortes do Pedro;
 - efeitos com IA.
-
-A estrutura foi mantida modular para essas próximas etapas.
-
-## Implantação
-
-Para atualizar a versão que já está online, siga:
-
-```text
-docs/DEPLOY_FACIL.md
-```
-
-Depois execute:
-
-```text
-docs/TESTES.md
-```
-
-## Estrutura principal
-
-```text
-api/                         # 12 Serverless Functions
-server/                      # módulos backend compartilhados
-docs/
-public/
-scripts/
-src/
-├── lib/
-│   ├── drive.js
-│   ├── effects.js           # motor dos efeitos
-│   ├── pending-upload.js
-│   ├── supabase.js
-│   └── utils.js
-├── config.js
-├── main.js
-└── styles.css
-supabase/
-├── schema.sql
-├── upgrade_v2_2_to_final.sql
-└── upgrade_final_to_filters_v1.sql
-index.html
-package.json
-vercel.json
-```
 
 ## Verificação local
 

@@ -19,6 +19,7 @@ import {
 import {
   createEffectMeta,
   effectLiveOverlayHtml,
+  effectMotionOverlayHtml,
   effects,
   effectUploadKey,
   getEffect,
@@ -68,6 +69,9 @@ const state = {
   cameraStream: null,
   cameraFacingMode: "environment",
   cameraStarting: false,
+  faceDetector: null,
+  faceTrackTimer: null,
+  faceTrackBusy: false,
   feed: [],
   liked: new Set(),
   feedDone: false,
@@ -270,8 +274,8 @@ function switchView(view) {
 function effectSelectorHtml(selectedId = state.activeEffectId) {
   return `<div class="effect-strip" aria-label="Efeitos da câmera">${effects.map(effect => `
     <button class="effect-option ${effect.id === selectedId ? "active" : ""}" type="button" data-effect="${effect.id}" title="${escapeHtml(effect.description)}">
-      <span class="effect-thumb effect-thumb-${effect.id}"><i></i></span>
-      <span>${escapeHtml(effect.short)}</span>
+      <span class="effect-thumb effect-thumb-${effect.id}" aria-hidden="true"><i></i><b></b></span>
+      <span class="effect-option-copy"><strong>${escapeHtml(effect.short)}</strong><small>${escapeHtml(effect.coverHint || effect.description)}</small></span>
     </button>`).join("")}</div>`;
 }
 
@@ -328,6 +332,75 @@ function updateLiveEffect(regenerateMeta = false) {
   });
   const label = document.querySelector("#active-effect-label");
   if (label) label.textContent = effect.name;
+  syncLiveFaceTracking();
+}
+
+function stopLiveFaceTracking() {
+  if (state.faceTrackTimer) {
+    clearInterval(state.faceTrackTimer);
+    state.faceTrackTimer = null;
+  }
+  state.faceTrackBusy = false;
+}
+
+async function updateLiveFlagraGlasses() {
+  if (state.faceTrackBusy || state.activeEffectId !== "flagra" || !state.cameraStream) return;
+  const video = document.querySelector("#camera-video");
+  const glasses = document.querySelector("[data-thug-glasses]");
+  const stage = document.querySelector(".live-camera-stage");
+  if (!video || !glasses || !stage || video.readyState < 2) return;
+
+  if (!("FaceDetector" in window)) {
+    glasses.classList.add("face-fallback");
+    return;
+  }
+
+  try {
+    state.faceTrackBusy = true;
+    state.faceDetector ||= new FaceDetector({ fastMode: true, maxDetectedFaces: 4 });
+    const faces = await state.faceDetector.detect(video);
+    if (!faces?.length) {
+      glasses.classList.add("face-fallback");
+      return;
+    }
+    const face = faces.reduce((largest, current) => {
+      const la = Number(largest?.boundingBox?.width || 0) * Number(largest?.boundingBox?.height || 0);
+      const ca = Number(current?.boundingBox?.width || 0) * Number(current?.boundingBox?.height || 0);
+      return ca > la ? current : largest;
+    }, faces[0]);
+    const box = face.boundingBox;
+    const sourceW = Number(video.videoWidth || 0);
+    const sourceH = Number(video.videoHeight || 0);
+    const stageW = stage.clientWidth;
+    const stageH = stage.clientHeight;
+    if (!box || !sourceW || !sourceH || !stageW || !stageH) return;
+
+    // O vídeo usa object-fit: cover; convertemos as coordenadas do detector para o recorte visível.
+    const scale = Math.max(stageW / sourceW, stageH / sourceH);
+    const renderedW = sourceW * scale;
+    const renderedH = sourceH * scale;
+    const offsetX = (stageW - renderedW) / 2;
+    const offsetY = (stageH - renderedH) / 2;
+    const centerX = offsetX + (Number(box.x) + Number(box.width) * .5) * scale;
+    const eyeY = offsetY + (Number(box.y) + Number(box.height) * .40) * scale;
+    const glassesW = Math.max(88, Math.min(stageW * .68, Number(box.width) * scale * .88));
+
+    glasses.classList.remove("face-fallback");
+    glasses.style.left = `${centerX}px`;
+    glasses.style.top = `${eyeY}px`;
+    glasses.style.width = `${glassesW}px`;
+  } catch {
+    glasses.classList.add("face-fallback");
+  } finally {
+    state.faceTrackBusy = false;
+  }
+}
+
+function syncLiveFaceTracking() {
+  stopLiveFaceTracking();
+  if (state.activeEffectId !== "flagra" || !state.cameraStream) return;
+  updateLiveFlagraGlasses();
+  state.faceTrackTimer = setInterval(updateLiveFlagraGlasses, 220);
 }
 
 function setCameraImmersive(active) {
@@ -335,6 +408,7 @@ function setCameraImmersive(active) {
 }
 
 function stopCameraStream(exitImmersive = true) {
+  stopLiveFaceTracking();
   if (state.cameraStream) {
     state.cameraStream.getTracks().forEach(track => track.stop());
     state.cameraStream = null;
@@ -463,6 +537,7 @@ function renderLiveCamera() {
   const video = document.querySelector("#camera-video");
   video.srcObject = state.cameraStream;
   video.play().catch(() => {});
+  video.addEventListener("loadedmetadata", syncLiveFaceTracking, { once: true });
   bindEffectSelector(effectId => selectLiveEffect(effectId, true));
   document.querySelector("#flip-camera").onclick = async () => {
     state.cameraFacingMode = state.cameraFacingMode === "environment" ? "user" : "environment";
@@ -890,9 +965,11 @@ function photoCardHtml(photo, liked, context) {
   const download = context === "mine"
     ? `<button class="photo-download" type="button" data-download="${photo.id}" data-variant="published" aria-label="Baixar foto publicada">${icons.download}<span>Baixar foto</span></button>`
     : "";
+  const motion = effectMotionOverlayHtml(effect.id, photo.effect_meta || {});
   return `<article class="photo-card" data-photo-card="${photo.id}">
     <div class="photo-frame" style="aspect-ratio:${aspect}">
       <img loading="lazy" decoding="async" src="${preview}" alt="Foto publicada por ${escapeHtml(photo.display_name)}" data-photo-open="${photo.id}" data-context="${context}" />
+      ${motion ? `<div class="published-motion-layer" aria-hidden="true">${motion}</div>` : ""}
     </div>
     <div class="photo-card-body">
       <div class="photo-meta"><p class="photo-author">Publicado por <strong>${escapeHtml(photo.display_name)}</strong></p><div class="photo-time">${escapeHtml(formatRelativeTime(photo.created_at))}</div>${effectBadge}${download}</div>
@@ -955,9 +1032,10 @@ function openPhotoModal(photoId, allowDownload) {
   const previewUrl = photo?.preview_url || `/api/media?photo=${encodeURIComponent(photoId)}`;
   const effect = getEffect(photo?.effect_id || "original");
   const canDownloadOriginal = Boolean(photo?.published_drive_id);
+  const motion = effectMotionOverlayHtml(effect.id, photo?.effect_meta || {});
   root.innerHTML = `<div class="modal-backdrop"><div class="photo-modal">
     <button class="modal-close" type="button" aria-label="Fechar">×</button>
-    <img src="${escapeHtml(previewUrl)}" alt="Foto da festa" />
+    <div class="modal-media"><img src="${escapeHtml(previewUrl)}" alt="Foto da festa" />${motion ? `<div class="published-motion-layer" aria-hidden="true">${motion}</div>` : ""}</div>
     ${effect.id !== "original" ? `<div class="modal-effect-name">${escapeHtml(effect.name)}</div>` : ""}
     <div class="modal-actions">
       ${allowDownload ? `<button class="btn btn-primary" type="button" data-modal-download="published">BAIXAR FOTO PUBLICADA</button>` : ""}

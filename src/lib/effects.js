@@ -2,26 +2,30 @@ const PUBLISHED_TYPE = "image/jpeg";
 const MAX_RENDER_DIMENSION = 2600;
 
 export const effects = Object.freeze([
-  { id: "original", name: "Original", short: "Original", description: "Sem efeito.", liveFilter: "none" },
-  { id: "dourado", name: "Dourado", short: "Dourado", description: "Dourado discreto, pensado para luzes quentes da festa.", liveFilter: "contrast(1.04) saturate(.96) sepia(.18) brightness(.99)" },
-  { id: "quente", name: "Quente", short: "Quente", description: "Temperatura quente natural, preservando tons de pele.", liveFilter: "contrast(1.03) saturate(1.05) sepia(.12) brightness(1.01)" },
-  { id: "ambar", name: "Âmbar", short: "Âmbar", description: "Luz âmbar mais marcada, inspirada em iluminação de salão.", liveFilter: "contrast(1.05) saturate(1.04) sepia(.28) brightness(1.01)" },
-  { id: "champagne", name: "Champagne", short: "Champagne", description: "Quente, claro e suave, com aparência de fotografia social.", liveFilter: "contrast(.98) saturate(.86) sepia(.14) brightness(1.06)" },
-  { id: "rose", name: "Rosé", short: "Rosé", description: "Calor suave com um toque rosado, sem exagerar a pele.", liveFilter: "contrast(1.02) saturate(.96) sepia(.09) hue-rotate(-7deg) brightness(1.02)" },
-  { id: "frio", name: "Frio", short: "Frio", description: "Temperatura fria e limpa.", liveFilter: "contrast(1.04) saturate(.98) hue-rotate(5deg) brightness(.99)" },
-  { id: "blue-hour", name: "Blue Hour", short: "Blue Hour", description: "Azul noturno elegante para luzes frias e LED.", liveFilter: "contrast(1.09) saturate(.82) hue-rotate(8deg) brightness(.96)" },
-  { id: "noturno", name: "Noturno", short: "Noturno", description: "Contraste de festa noturna, sombras mais profundas e cor controlada.", liveFilter: "contrast(1.16) saturate(.78) brightness(.92)" },
-  { id: "arquivo18", name: "Arquivo 18", short: "Arquivo 18", description: "Ficha editorial de arquivo da noite, com número único.", liveFilter: "contrast(1.08) saturate(.78)" },
-  { id: "flagra", name: "Flagra da Festa", short: "Flagra", description: "Visual de foto de imprensa com flash e registro do momento.", liveFilter: "contrast(1.16) saturate(.96) brightness(1.04)" },
-  { id: "familia-nao", name: "A família NÃO vai ver", short: "Confidencial", description: "Documento censurado com tarjas e selo confidencial.", liveFilter: "contrast(1.12) saturate(.62)" },
-  { id: "memoria", name: "Memória Desbloqueada", short: "Memória", description: "Registro da noite tratado como memória conquistada.", liveFilter: "contrast(1.08) saturate(1.04) brightness(.98)" },
-  { id: "raridade", name: "Raridade da Foto", short: "Raridade", description: "Classificação aleatória exibida antes do clique e preservada na foto.", liveFilter: "contrast(1.06) saturate(1.12)" },
-  { id: "detector-historias", name: "Detector de Histórias", short: "Detector", description: "Resultado aleatório aparece ao vivo e fica gravado na foto.", liveFilter: "contrast(1.05) saturate(1.04) sepia(.05)" },
-  { id: "descartavel18", name: "Câmera Descartável 18", short: "Descartável", description: "Filme, grão, vazamento de luz e data impressa.", liveFilter: "contrast(1.06) saturate(.86) sepia(.12) brightness(1.04)" },
-  { id: "primeira-noite", name: "Primeira Noite dos 18", short: "Primeira noite", description: "Moldura social em azul-marinho e dourado, inspirada na identidade da festa.", liveFilter: "contrast(1.08) saturate(.92) sepia(.13) brightness(.96)" },
-  { id: "editorial2612", name: "Editorial 26.12", short: "Editorial", description: "Composição assimétrica de revista, discreta e elegante.", liveFilter: "contrast(1.06) saturate(.9) brightness(.99)" },
-  { id: "filme35", name: "Filme 35", short: "Filme 35", description: "Borda de negativo 35 mm com numeração do frame.", liveFilter: "contrast(1.07) saturate(.88) sepia(.07) brightness(.99)" },
-  { id: "cartao-garca", name: "Garça · 26.12", short: "Garça 26.12", description: "Moldura de lembrança da noite com localização e data.", liveFilter: "contrast(1.04) saturate(.94) sepia(.06) brightness(1.01)" },
+  { id: "original", name: "Original", short: "Original", coverHint: "Sem efeito", description: "Sem efeito.", liveFilter: "none" },
+  { id: "dourado", name: "Dourado", short: "Dourado", coverHint: "Luz dourada", description: "Dourado discreto, pensado para luzes quentes da festa.", liveFilter: "contrast(1.04) saturate(.96) sepia(.18) brightness(.99)" },
+  { id: "quente", name: "Quente", short: "Quente", coverHint: "Tom acolhedor", description: "Temperatura quente natural, preservando tons de pele.", liveFilter: "contrast(1.03) saturate(1.05) sepia(.12) brightness(1.01)" },
+  { id: "ambar", name: "Âmbar", short: "Âmbar", coverHint: "Cinema quente", description: "Luz âmbar mais marcada, inspirada em iluminação de salão.", liveFilter: "contrast(1.05) saturate(1.04) sepia(.28) brightness(1.01)" },
+  { id: "champagne", name: "Champagne", short: "Champagne", coverHint: "Brilho suave", description: "Quente, claro e suave, com aparência de fotografia social.", liveFilter: "contrast(.98) saturate(.86) sepia(.14) brightness(1.06)" },
+  { id: "rose", name: "Rosé", short: "Rosé", coverHint: "Glow rosado", description: "Calor suave com um toque rosado, sem exagerar a pele.", liveFilter: "contrast(1.02) saturate(.96) sepia(.09) hue-rotate(-7deg) brightness(1.02)" },
+  { id: "mel", name: "Mel", short: "Mel", coverHint: "Calor macio", description: "Temperatura mel, quente e macia para pele e luz ambiente.", liveFilter: "contrast(1.01) saturate(1.02) sepia(.22) brightness(1.04)" },
+  { id: "tungstenio", name: "Tungstênio", short: "Tungstênio", coverHint: "Luz de salão", description: "Corrige e valoriza iluminação interna quente de salão.", liveFilter: "contrast(1.07) saturate(.94) sepia(.20) hue-rotate(-3deg) brightness(.98)" },
+  { id: "frio", name: "Frio", short: "Frio", coverHint: "Tom gelado", description: "Temperatura fria e limpa.", liveFilter: "contrast(1.04) saturate(.98) hue-rotate(5deg) brightness(.99)" },
+  { id: "gelo", name: "Gelo", short: "Gelo", coverHint: "Azul cristalino", description: "Frio mais pronunciado, limpo e luminoso.", liveFilter: "contrast(1.08) saturate(.86) hue-rotate(10deg) brightness(1.02)" },
+  { id: "blue-hour", name: "Blue Hour", short: "Blue Hour", coverHint: "Noite azul", description: "Azul noturno elegante para luzes frias e LED.", liveFilter: "contrast(1.09) saturate(.82) hue-rotate(8deg) brightness(.96)" },
+  { id: "crepusculo", name: "Crepúsculo", short: "Crepúsculo", coverHint: "Azul + âmbar", description: "Mistura sombras frias e luzes quentes, como fim de tarde.", liveFilter: "contrast(1.09) saturate(.96) sepia(.08) hue-rotate(4deg) brightness(.98)" },
+  { id: "noturno", name: "Noturno", short: "Noturno", coverHint: "Cinema escuro", description: "Contraste de festa noturna, sombras mais profundas e cor controlada.", liveFilter: "contrast(1.16) saturate(.78) brightness(.92)" },
+  { id: "arquivo18", name: "Arquivo 18", short: "Arquivo 18", coverHint: "Scanner + dossiê", description: "Ficha editorial de arquivo da noite, com número único.", liveFilter: "contrast(1.08) saturate(.78)" },
+  { id: "flagra", name: "Flagra da Festa", short: "Flagra", coverHint: "Óculos + flash", description: "Flagra de paparazzi com flash e óculos thug life acompanhando o rosto quando o navegador permite.", liveFilter: "contrast(1.16) saturate(.96) brightness(1.04)" },
+  { id: "familia-nao", name: "A família NÃO vai ver", short: "Confidencial", coverHint: "Tarja + carimbo", description: "Documento censurado com tarjas e selo confidencial.", liveFilter: "contrast(1.12) saturate(.62)" },
+  { id: "memoria", name: "Memória Desbloqueada", short: "Memória", coverHint: "Conquista animada", description: "Registro da noite tratado como memória conquistada.", liveFilter: "contrast(1.08) saturate(1.04) brightness(.98)" },
+  { id: "raridade", name: "Raridade da Foto", short: "Raridade", coverHint: "Carta + elixir", description: "A foto vira uma carta inspirada no visual de Clash Royale, com raridade e custo de elixir aleatórios.", liveFilter: "contrast(1.06) saturate(1.12)" },
+  { id: "detector-historias", name: "Detector de Histórias", short: "Detector", coverHint: "Análise divertida", description: "Resultado aleatório aparece ao vivo e fica gravado na foto.", liveFilter: "contrast(1.05) saturate(1.04) sepia(.05)" },
+  { id: "descartavel18", name: "Câmera Descartável 18", short: "Descartável", coverHint: "Filme vintage", description: "Filme, grão, vazamento de luz e data impressa.", liveFilter: "contrast(1.06) saturate(.86) sepia(.12) brightness(1.04)" },
+  { id: "primeira-noite", name: "Primeira Noite dos 18", short: "Primeira noite", coverHint: "Brilho elegante", description: "Moldura social em azul-marinho e dourado, inspirada na identidade da festa.", liveFilter: "contrast(1.08) saturate(.92) sepia(.13) brightness(.96)" },
+  { id: "editorial2612", name: "Editorial 26.12", short: "Editorial", coverHint: "Estilo revista", description: "Composição assimétrica de revista, discreta e elegante.", liveFilter: "contrast(1.06) saturate(.9) brightness(.99)" },
+  { id: "filme35", name: "Filme 35", short: "Filme 35", coverHint: "Negativo clássico", description: "Borda de negativo 35 mm com numeração do frame.", liveFilter: "contrast(1.07) saturate(.88) sepia(.07) brightness(.99)" },
+  { id: "cartao-garca", name: "Garça · 26.12", short: "Garça 26.12", coverHint: "Lembrança da festa", description: "Moldura de lembrança da noite com localização e data.", liveFilter: "contrast(1.04) saturate(.94) sepia(.06) brightness(1.01)" },
 ]);
 
 const effectMap = new Map(effects.map(effect => [effect.id, effect]));
@@ -61,11 +65,10 @@ export function createEffectMeta(effectId) {
       const rarity = pickWeighted([
         { weight: 0.46, value: { label: "COMUM", code: "C" } },
         { weight: 0.29, value: { label: "RARA", code: "R" } },
-        { weight: 0.17, value: { label: "ÉPICA", code: "E" } },
+        { weight: 0.18, value: { label: "ÉPICA", code: "E" } },
         { weight: 0.07, value: { label: "LENDÁRIA", code: "L" } },
-        { weight: 0.01, value: { label: "NÃO DEVERIA EXISTIR", code: "X" } },
       ]);
-      return { capturedAt, rarity: rarity.label, rarityCode: rarity.code };
+      return { capturedAt, rarity: rarity.label, rarityCode: rarity.code, elixir: randomInt(1, 9) };
     }
     case "detector-historias":
       return { capturedAt, tellable: randomInt(2, 28), classified: randomInt(18, 87) };
@@ -96,19 +99,28 @@ export function effectLiveOverlayHtml(effectId, meta = {}) {
     case "arquivo18":
       return `<div class="live-overlay overlay-archive"><div class="archive-rule"></div><span>PEDRO / ARQUIVO 018</span><strong>${meta.archiveId || "18-0000"}</strong><small>26.12.2026 · GARÇA, SP</small><em>REGISTRO DA NOITE</em></div>`;
     case "flagra":
-      return `<div class="live-overlay overlay-flagra"><span><b>●</b> ${time}</span><strong>FLAGRA ${meta.flagraId || "018"}</strong><small>PEDRO 18 · 26 DEZ 2026</small></div>`;
+      return `<div class="live-overlay overlay-flagra"><div class="thug-life-glasses" data-thug-glasses aria-hidden="true"><i></i><i></i><b></b></div><span><b>●</b> ${time}</span><strong>FLAGRA ${meta.flagraId || "018"}</strong><small>PEDRO 18 · 26 DEZ 2026</small></div>`;
     case "familia-nao":
       return `<div class="live-overlay overlay-classified"><div class="classified-mark">CONFIDENCIAL</div><div class="redaction redaction-a"></div><div class="redaction redaction-b"></div><strong>NÃO ENVIAR AO GRUPO DA FAMÍLIA</strong><small>PEDRO 18 · DOCUMENTO DE ACESSO RESTRITO</small></div>`;
     case "memoria":
       return `<div class="live-overlay overlay-memory"><span>MEMÓRIA Nº ${meta.memoryId || "018"}</span><strong>26 · 12 · 2026</strong><small>+${meta.xp || 180} XP · PEDRO 18</small></div>`;
-    case "raridade":
-      return `<div class="live-overlay overlay-rarity ${meta.rarityCode === "X" ? "rarity-secret" : ""}"><span>RARIDADE DA FOTO</span><strong>${meta.rarity || "RARA"}</strong><small>PEDRO 18 · EDIÇÃO DA NOITE</small></div>`;
+    case "raridade": {
+      const code = String(meta.rarityCode || "R");
+      const rarityClass = code === "L" ? "legendary" : code === "E" ? "epic" : code === "R" ? "rare" : "common";
+      return `<div class="live-overlay overlay-rarity rarity-${rarityClass}">
+        <div class="cr-card-shell ${code === "L" ? "cr-card-legendary" : "cr-card-standard"}">
+          <div class="cr-card-frame"></div>
+          <div class="cr-elixir"><span>${meta.elixir ?? 4}</span></div>
+          <div class="cr-rarity-label">${meta.rarity || "RARA"}</div>
+        </div>
+      </div>`;
+    }
     case "detector-historias":
       return `<div class="live-overlay overlay-detector"><span>DETECTOR DE HISTÓRIAS</span><div><strong>${meta.tellable ?? 12}</strong><small>podem ser contadas</small></div><div><strong>${meta.classified ?? 43}</strong><small>melhor não contar</small></div><em>resultado totalmente científico</em></div>`;
     case "descartavel18":
-      return `<div class="live-overlay overlay-disposable"><span>PEDRO 18</span><strong>26 12 '26</strong><small>${time}</small></div>`;
+      return `<div class="live-overlay overlay-disposable"><span>PEDRO 18</span><strong>26 12 '26</strong><small>${time}</small><i class="film-leak"></i></div>`;
     case "primeira-noite":
-      return `<div class="live-overlay overlay-first-night"><span>PEDRO</span><strong>XVIII</strong><small>PRIMEIRA NOITE · 26.12.2026 · GARÇA</small></div>`;
+      return `<div class="live-overlay overlay-first-night"><i class="night-spark spark-a"></i><i class="night-spark spark-b"></i><i class="night-spark spark-c"></i><span>PEDRO</span><strong>XVIII</strong><small>PRIMEIRA NOITE · 26.12.2026 · GARÇA</small></div>`;
     case "editorial2612":
       return `<div class="live-overlay overlay-editorial"><span>26 / 12</span><strong>PEDRO XVIII</strong><small>GARÇA · SP</small><i>uma noite para guardar</i></div>`;
     case "filme35":
@@ -117,6 +129,25 @@ export function effectLiveOverlayHtml(effectId, meta = {}) {
       return `<div class="live-overlay overlay-postcard"><span>GARÇA</span><strong>26.12.2026</strong><small>PEDRO · XVIII</small></div>`;
     default:
       return "";
+  }
+}
+
+export function effectMotionOverlayHtml(effectId, meta = {}) {
+  const effect = getEffect(effectId);
+  switch (effect.id) {
+    case "arquivo18": return `<div class="motion-overlay motion-archive"><i></i></div>`;
+    case "flagra": return `<div class="motion-overlay motion-flagra"><i></i></div>`;
+    case "familia-nao": return `<div class="motion-overlay motion-classified"><b>CONFIDENCIAL</b><i></i></div>`;
+    case "memoria": return `<div class="motion-overlay motion-memory"><span>MEMÓRIA DESBLOQUEADA</span></div>`;
+    case "raridade": {
+      const code = String(meta.rarityCode || "R");
+      const rarityClass = code === "L" ? "legendary" : code === "E" ? "epic" : code === "R" ? "rare" : "common";
+      return `<div class="motion-overlay motion-rarity rarity-${rarityClass}"><i></i></div>`;
+    }
+    case "detector-historias": return `<div class="motion-overlay motion-detector"><i></i></div>`;
+    case "descartavel18": return `<div class="motion-overlay motion-disposable"><i></i><b></b></div>`;
+    case "primeira-noite": return `<div class="motion-overlay motion-first-night"><i></i><i></i><i></i></div>`;
+    default: return "";
   }
 }
 
@@ -302,13 +333,47 @@ function drawArchive(ctx, width, height, meta) {
   ctx.restore();
 }
 
+function drawThugGlasses(ctx, width, height, faceBox = null) {
+  const u = Math.min(width, height);
+  const fallback = { x: 0.29, y: 0.24, w: 0.42, h: 0.42 };
+  const face = faceBox || fallback;
+  const gx = (face.x + face.w * 0.5) * width;
+  const gy = (face.y + face.h * 0.40) * height;
+  const glassesW = Math.max(u * 0.22, Math.min(u * 0.58, face.w * width * 0.88));
+  const glassesH = glassesW * 0.28;
+  const lensW = glassesW * 0.43;
+  const gap = glassesW * 0.08;
+  const leftX = -gap * 0.5 - lensW;
+  const rightX = gap * 0.5;
+
+  ctx.save(); ctx.translate(gx, gy); ctx.rotate(-0.035);
+  ctx.shadowColor = "rgba(0,0,0,.38)"; ctx.shadowBlur = glassesH * 0.18; ctx.shadowOffsetY = glassesH * 0.08;
+  const lens = x => {
+    const h = glassesH;
+    ctx.beginPath(); ctx.moveTo(x,-h*.42); ctx.lineTo(x+lensW,-h*.42); ctx.lineTo(x+lensW*.90,h*.34); ctx.lineTo(x+lensW*.18,h*.48); ctx.closePath();
+    ctx.fillStyle="#080808"; ctx.fill(); ctx.strokeStyle="#000"; ctx.lineWidth=Math.max(2,u*.004); ctx.stroke();
+    ctx.fillStyle="rgba(255,255,255,.92)";
+    const px=lensW/7, py=h/5;
+    [[1,1],[2,1],[2,2],[3,2],[4,2],[4,3]].forEach(([ix,iy])=>ctx.fillRect(x+ix*px,-h*.34+iy*py*.58,px*.78,py*.44));
+  };
+  lens(leftX); lens(rightX);
+  ctx.shadowColor="transparent"; ctx.fillStyle="#050505";
+  ctx.fillRect(-gap*.55,-glassesH*.18,gap*1.1,glassesH*.13);
+  ctx.fillRect(leftX-glassesW*.12,-glassesH*.28,glassesW*.14,glassesH*.10);
+  ctx.fillRect(rightX+lensW-glassesW*.02,-glassesH*.28,glassesW*.14,glassesH*.10);
+  ctx.restore();
+}
+
 function drawFlagra(ctx, width, height, meta) {
   adjustPixels(ctx, width, height, { contrast: 1.15, saturation: 0.92, warmth: -2, brightness: 6 });
   const u = Math.min(width, height);
   const flash = ctx.createRadialGradient(width * 0.54, height * 0.1, 0, width * 0.54, height * 0.1, u * 0.58);
-  flash.addColorStop(0, "rgba(255,255,255,.28)");
+  flash.addColorStop(0, "rgba(255,255,255,.30)");
   flash.addColorStop(1, "rgba(255,255,255,0)");
   ctx.fillStyle = flash; ctx.fillRect(0, 0, width, height);
+
+  drawThugGlasses(ctx, width, height, meta?.faceBox || null);
+
   const pad = u * 0.045;
   const bottom = u * 0.135;
   ctx.fillStyle = "rgba(4,8,13,.72)";
@@ -380,29 +445,57 @@ function drawMemory(ctx, width, height, meta) {
   ctx.fillText(`+${meta?.xp || 180} XP · PEDRO XVIII`, pad * 1.25, y + u * 0.143);
 }
 
+function cardPath(ctx, x, y, width, height, legendary = false) {
+  ctx.beginPath();
+  if (legendary) {
+    ctx.moveTo(x+width*.50,y); ctx.lineTo(x+width*.92,y+height*.12); ctx.lineTo(x+width*.92,y+height*.74); ctx.lineTo(x+width*.50,y+height); ctx.lineTo(x+width*.08,y+height*.74); ctx.lineTo(x+width*.08,y+height*.12);
+  } else {
+    const c=width*.075; ctx.moveTo(x+c,y); ctx.lineTo(x+width-c,y); ctx.lineTo(x+width,y+c); ctx.lineTo(x+width,y+height-c); ctx.lineTo(x+width-c,y+height); ctx.lineTo(x+c,y+height); ctx.lineTo(x,y+height-c); ctx.lineTo(x,y+c);
+  }
+  ctx.closePath();
+}
+
+function drawElixirDrop(ctx, cx, cy, radius, value) {
+  ctx.save(); ctx.translate(cx,cy);
+  const grad=ctx.createLinearGradient(-radius,-radius,radius,radius); grad.addColorStop(0,'#ff64ff'); grad.addColorStop(.5,'#b515df'); grad.addColorStop(1,'#6d069d');
+  ctx.beginPath(); ctx.moveTo(0,-radius*1.18); ctx.bezierCurveTo(radius*.82,-radius*.84,radius*1.06,-radius*.05,radius*.72,radius*.52); ctx.bezierCurveTo(radius*.42,radius*1.02,0,radius*1.24,0,radius*1.24); ctx.bezierCurveTo(0,radius*1.24,-radius*.42,radius*1.02,-radius*.72,radius*.52); ctx.bezierCurveTo(-radius*1.06,-radius*.05,-radius*.82,-radius*.84,0,-radius*1.18); ctx.closePath();
+  ctx.fillStyle=grad; ctx.shadowColor='rgba(219,57,255,.55)'; ctx.shadowBlur=radius*.38; ctx.fill(); ctx.shadowColor='transparent'; ctx.lineWidth=Math.max(2,radius*.12); ctx.strokeStyle='#54106f'; ctx.stroke();
+  ctx.beginPath(); ctx.arc(-radius*.28,-radius*.38,radius*.18,0,Math.PI*2); ctx.fillStyle='rgba(255,255,255,.34)'; ctx.fill();
+  ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.font=`900 ${radius*1.25}px system-ui, sans-serif`; ctx.lineWidth=Math.max(2,radius*.11); ctx.strokeStyle='rgba(45,0,68,.86)'; ctx.strokeText(String(value??4),0,radius*.06); ctx.fillStyle='#fff'; ctx.fillText(String(value??4),0,radius*.06); ctx.restore();
+}
+
+function rarityPalette(code) {
+  switch(code) {
+    case 'L': return { outer:'#1b1e2e',inner:'#effcff',glow:'rgba(225,89,255,.72)',label:'#fff' };
+    case 'E': return { outer:'#4e166e',inner:'#d67cff',glow:'rgba(174,60,255,.55)',label:'#f4d6ff' };
+    case 'R': return { outer:'#8f4311',inner:'#ffb04a',glow:'rgba(255,150,52,.48)',label:'#ffe4b3' };
+    default: return { outer:'#344c68',inner:'#c7ddf0',glow:'rgba(154,201,240,.36)',label:'#eef8ff' };
+  }
+}
+
 function drawRarity(ctx, width, height, meta) {
-  adjustPixels(ctx, width, height, { contrast: 1.07, saturation: 1.13, warmth: 3, brightness: 0 });
-  drawVignette(ctx, width, height, 0.13);
+  adjustPixels(ctx, width, height, { contrast: 1.06, saturation: 1.10, warmth: 1, brightness: 0 });
   const u = Math.min(width, height);
-  const pad = u * 0.052;
-  const rarity = String(meta?.rarity || "RARA");
-  const secret = meta?.rarityCode === "X";
-  ctx.strokeStyle = secret ? "rgba(209,70,78,.92)" : "rgba(216,179,106,.78)";
-  ctx.lineWidth = Math.max(2, u * 0.0024);
-  ctx.strokeRect(pad, pad, width - pad * 2, height - pad * 2);
-  ctx.textAlign = "center";
-  ctx.fillStyle = secret ? "#ffd3d6" : "#e7c77f";
-  ctx.font = `700 ${u * 0.017}px system-ui, sans-serif`;
-  ctx.fillText("RARIDADE DA FOTO · PEDRO 18", width / 2, pad + u * 0.038);
-  ctx.fillStyle = "rgba(3,10,18,.64)";
-  ctx.fillRect(width * 0.18, height - pad - u * 0.135, width * 0.64, u * 0.135);
-  ctx.fillStyle = "#fff8e8";
-  ctx.font = `500 ${u * (secret ? 0.038 : 0.06)}px Georgia, serif`;
-  ctx.fillText(rarity, width / 2, height - pad - u * 0.064);
-  ctx.fillStyle = secret ? "rgba(255,211,214,.75)" : "rgba(231,199,127,.75)";
-  ctx.font = `600 ${u * 0.016}px system-ui, sans-serif`;
-  ctx.fillText("EDIÇÃO DA NOITE · 26.12.2026", width / 2, height - pad - u * 0.026);
-  ctx.textAlign = "left";
+  const code = String(meta?.rarityCode || "R");
+  const legendary = code === "L";
+  const palette = rarityPalette(code);
+  const snapshot = document.createElement("canvas"); snapshot.width = width; snapshot.height = height; snapshot.getContext("2d").drawImage(ctx.canvas, 0, 0);
+  const cardH = Math.min(height * 0.86, u * 1.16);
+  const cardW = Math.min(width * 0.78, cardH * (legendary ? 0.76 : 0.72));
+  const x = (width - cardW) / 2; const y = (height - cardH) / 2 - u * 0.01;
+  ctx.fillStyle = "rgba(2,7,15,.58)"; ctx.fillRect(0, 0, width, height);
+  ctx.save(); cardPath(ctx,x,y,cardW,cardH,legendary); ctx.clip(); ctx.drawImage(snapshot,0,0,width,height); ctx.restore();
+  ctx.save(); ctx.shadowColor=palette.glow; ctx.shadowBlur=u*(legendary?.050:.030); cardPath(ctx,x,y,cardW,cardH,legendary); ctx.lineWidth=u*.030;
+  if (legendary) { const g=ctx.createLinearGradient(x,y,x+cardW,y+cardH); [['0','#6dffe7'],['.20','#fff78a'],['.42','#ff9bd7'],['.64','#c075ff'],['.82','#65a7ff'],['1','#8affda']].forEach(([a,c])=>g.addColorStop(Number(a),c)); ctx.strokeStyle=g; } else ctx.strokeStyle=palette.outer;
+  ctx.stroke(); ctx.restore();
+  cardPath(ctx,x,y,cardW,cardH,legendary); ctx.lineWidth=u*.019; ctx.strokeStyle=palette.outer; ctx.stroke();
+  cardPath(ctx,x+u*.008,y+u*.008,cardW-u*.016,cardH-u*.016,legendary); ctx.lineWidth=u*.007;
+  if (legendary) { const g=ctx.createLinearGradient(x,y,x+cardW,y); g.addColorStop(0,'#b6fff5'); g.addColorStop(.35,'#fff7a9'); g.addColorStop(.68,'#ffb7ee'); g.addColorStop(1,'#9ec8ff'); ctx.strokeStyle=g; } else ctx.strokeStyle=palette.inner;
+  ctx.stroke();
+  cardPath(ctx,x+u*.015,y+u*.015,cardW-u*.030,cardH-u*.030,legendary); ctx.lineWidth=u*.003; ctx.strokeStyle='rgba(255,255,255,.80)'; ctx.stroke();
+  drawElixirDrop(ctx,x+cardW*.06,y+cardH*.04,u*.052,meta?.elixir??4);
+  ctx.textAlign='center'; ctx.textBaseline='alphabetic'; ctx.font=`900 ${u*.026}px system-ui, sans-serif`; ctx.lineWidth=Math.max(2,u*.005); ctx.strokeStyle='rgba(0,0,0,.72)';
+  const labelY=Math.min(height-u*.025,y+cardH+u*.045); ctx.strokeText(String(meta?.rarity||'RARA'),width/2,labelY); ctx.fillStyle=palette.label; ctx.fillText(String(meta?.rarity||'RARA'),width/2,labelY); ctx.textAlign='left';
 }
 
 function drawDetector(ctx, width, height, meta) {
@@ -545,8 +638,12 @@ function drawSimpleColor(ctx, width, height, kind) {
     ambar: { contrast: 1.05, saturation: 1.04, warmth: 24, brightness: 1, vignette: 0.06 },
     champagne: { contrast: 0.98, saturation: 0.86, warmth: 10, brightness: 8, vignette: 0.04 },
     rose: { contrast: 1.02, saturation: 0.96, warmth: 10, brightness: 2, redLift: 5 },
+    mel: { contrast: 1.01, saturation: 1.02, warmth: 19, brightness: 4, vignette: 0.04 },
+    tungstenio: { contrast: 1.07, saturation: 0.94, warmth: 17, brightness: -2, vignette: 0.07 },
     frio: { contrast: 1.04, saturation: 0.98, warmth: -15, brightness: -1 },
+    gelo: { contrast: 1.08, saturation: 0.86, warmth: -24, brightness: 4, vignette: 0.04 },
     "blue-hour": { contrast: 1.09, saturation: 0.82, warmth: -24, brightness: -4, vignette: 0.12 },
+    crepusculo: { contrast: 1.09, saturation: 0.96, warmth: 4, brightness: -2, vignette: 0.10 },
     noturno: { contrast: 1.16, saturation: 0.78, warmth: -7, brightness: -10, vignette: 0.2 },
   };
   const preset = presets[kind];
@@ -569,8 +666,12 @@ function applyEffectDrawing(ctx, width, height, effectId, meta) {
     case "ambar": drawSimpleColor(ctx, width, height, "ambar"); break;
     case "champagne": drawSimpleColor(ctx, width, height, "champagne"); break;
     case "rose": drawSimpleColor(ctx, width, height, "rose"); break;
+    case "mel": drawSimpleColor(ctx, width, height, "mel"); break;
+    case "tungstenio": drawSimpleColor(ctx, width, height, "tungstenio"); break;
     case "frio": drawSimpleColor(ctx, width, height, "frio"); break;
+    case "gelo": drawSimpleColor(ctx, width, height, "gelo"); break;
     case "blue-hour": drawSimpleColor(ctx, width, height, "blue-hour"); break;
+    case "crepusculo": drawSimpleColor(ctx, width, height, "crepusculo"); break;
     case "noturno": drawSimpleColor(ctx, width, height, "noturno"); break;
     case "arquivo18": drawArchive(ctx, width, height, meta); break;
     case "flagra": drawFlagra(ctx, width, height, meta); break;
@@ -585,6 +686,22 @@ function applyEffectDrawing(ctx, width, height, effectId, meta) {
     case "cartao-garca": drawPostcard(ctx, width, height, meta); break;
     default: break;
   }
+}
+
+async function detectLargestFaceBox(sourceCanvas) {
+  if (!("FaceDetector" in window)) return null;
+  try {
+    const detector = new FaceDetector({ fastMode: true, maxDetectedFaces: 4 });
+    const faces = await detector.detect(sourceCanvas);
+    if (!faces?.length) return null;
+    const face = faces.reduce((largest,current)=>{
+      const la=Number(largest?.boundingBox?.width||0)*Number(largest?.boundingBox?.height||0);
+      const ca=Number(current?.boundingBox?.width||0)*Number(current?.boundingBox?.height||0);
+      return ca>la?current:largest;
+    },faces[0]);
+    const box=face?.boundingBox; if(!box) return null;
+    return { x:Math.max(0,Math.min(1,Number(box.x||0)/sourceCanvas.width)), y:Math.max(0,Math.min(1,Number(box.y||0)/sourceCanvas.height)), w:Math.max(.05,Math.min(1,Number(box.width||0)/sourceCanvas.width)), h:Math.max(.05,Math.min(1,Number(box.height||0)/sourceCanvas.height)) };
+  } catch { return null; }
 }
 
 export async function renderEffectFile(originalFile, effectId, meta = {}) {
@@ -605,7 +722,12 @@ export async function renderEffectFile(originalFile, effectId, meta = {}) {
     ctx.fillStyle = "#061426";
     ctx.fillRect(0, 0, width, height);
     source.draw(ctx, width, height);
-    applyEffectDrawing(ctx, width, height, effect.id, meta);
+    let renderMeta = meta;
+    if (effect.id === "flagra") {
+      const faceBox = await detectLargestFaceBox(canvas);
+      renderMeta = faceBox ? { ...meta, faceBox } : meta;
+    }
+    applyEffectDrawing(ctx, width, height, effect.id, renderMeta);
     const blob = await canvasToBlob(canvas, PUBLISHED_TYPE, 0.92);
     canvas.width = 1;
     canvas.height = 1;
