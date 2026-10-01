@@ -61,6 +61,9 @@ const state = {
   selectedUrl: null,
   activeEffectId: "original",
   effectMeta: {},
+  liveEffectMeta: createEffectMeta("original"),
+  liveEffectMetaId: "original",
+  effectStripScrollLeft: 0,
   effectProcessing: false,
   cameraStream: null,
   cameraFacingMode: "environment",
@@ -272,18 +275,54 @@ function effectSelectorHtml(selectedId = state.activeEffectId) {
     </button>`).join("")}</div>`;
 }
 
-function bindEffectSelector(onSelect) {
-  document.querySelectorAll("[data-effect]").forEach(button => {
-    button.addEventListener("click", () => onSelect(button.dataset.effect));
+function restoreEffectStripPosition() {
+  requestAnimationFrame(() => {
+    document.querySelectorAll(".effect-strip").forEach(strip => {
+      strip.scrollLeft = state.effectStripScrollLeft || 0;
+    });
   });
 }
 
-function updateLiveEffect() {
+function bindEffectSelector(onSelect) {
+  document.querySelectorAll(".effect-strip").forEach(strip => {
+    strip.scrollLeft = state.effectStripScrollLeft || 0;
+    strip.addEventListener("scroll", () => {
+      state.effectStripScrollLeft = strip.scrollLeft;
+    }, { passive: true });
+  });
+
+  document.querySelectorAll("[data-effect]").forEach(button => {
+    button.addEventListener("click", () => {
+      const strip = button.closest(".effect-strip");
+      if (strip) state.effectStripScrollLeft = strip.scrollLeft;
+      onSelect(button.dataset.effect);
+    });
+  });
+  restoreEffectStripPosition();
+}
+
+function ensureLiveEffectMeta(effectId, regenerate = false) {
+  const normalized = getEffect(effectId).id;
+  if (regenerate || state.liveEffectMetaId !== normalized || !state.liveEffectMeta) {
+    state.liveEffectMeta = createEffectMeta(normalized);
+    state.liveEffectMetaId = normalized;
+  }
+  return state.liveEffectMeta;
+}
+
+function selectLiveEffect(effectId, regenerate = true) {
+  state.activeEffectId = getEffect(effectId).id;
+  ensureLiveEffectMeta(state.activeEffectId, regenerate);
+  updateLiveEffect(false);
+}
+
+function updateLiveEffect(regenerateMeta = false) {
   const video = document.querySelector("#camera-video");
   const overlay = document.querySelector("#camera-live-overlay");
   const effect = getEffect(state.activeEffectId);
+  const meta = ensureLiveEffectMeta(effect.id, regenerateMeta);
   if (video) video.style.filter = effect.liveFilter || "none";
-  if (overlay) overlay.innerHTML = effectLiveOverlayHtml(effect.id);
+  if (overlay) overlay.innerHTML = effectLiveOverlayHtml(effect.id, meta);
   document.querySelectorAll("[data-effect]").forEach(button => {
     button.classList.toggle("active", button.dataset.effect === effect.id);
   });
@@ -291,11 +330,16 @@ function updateLiveEffect() {
   if (label) label.textContent = effect.name;
 }
 
-function stopCameraStream() {
+function setCameraImmersive(active) {
+  document.body.classList.toggle("camera-mode-active", Boolean(active));
+}
+
+function stopCameraStream(exitImmersive = true) {
   if (state.cameraStream) {
     state.cameraStream.getTracks().forEach(track => track.stop());
     state.cameraStream = null;
   }
+  if (exitImmersive) setCameraImmersive(false);
 }
 
 function renderCameraEmpty() {
@@ -317,10 +361,7 @@ function renderCameraEmpty() {
       <button id="take-photo" class="btn btn-primary" type="button">ATIVAR CÂMERA</button>
       <button id="native-camera" class="btn btn-secondary" type="button">USAR CÂMERA DO CELULAR</button>
     </div>`;
-  bindEffectSelector(effectId => {
-    state.activeEffectId = getEffect(effectId).id;
-    updateLiveEffect();
-  });
+  bindEffectSelector(effectId => selectLiveEffect(effectId, true));
   document.querySelector("#take-photo").onclick = startCamera;
   document.querySelector("#native-camera").onclick = () => document.querySelector("#camera-input").click();
 }
@@ -332,7 +373,7 @@ function renderCameraStarting() {
 }
 
 function renderCameraPermissionError(message = "Não foi possível abrir a câmera dentro do aplicativo.") {
-  stopCameraStream();
+  stopCameraStream(true);
   const card = document.querySelector("#camera-card");
   if (!card) return;
   card.innerHTML = `
@@ -351,10 +392,7 @@ function renderCameraPermissionError(message = "Não foi possível abrir a câme
       <button id="retry-custom-camera" class="btn btn-secondary" type="button">TENTAR CÂMERA INTERNA</button>
       <button id="native-camera" class="btn btn-primary" type="button">ABRIR CÂMERA DO CELULAR</button>
     </div>`;
-  bindEffectSelector(effectId => {
-    state.activeEffectId = getEffect(effectId).id;
-    updateLiveEffect();
-  });
+  bindEffectSelector(effectId => selectLiveEffect(effectId, true));
   document.querySelector("#retry-custom-camera").onclick = startCamera;
   document.querySelector("#native-camera").onclick = () => document.querySelector("#camera-input").click();
 }
@@ -367,7 +405,9 @@ async function startCamera() {
   }
 
   state.cameraStarting = true;
-  stopCameraStream();
+  setCameraImmersive(true);
+  stopCameraStream(false);
+  ensureLiveEffectMeta(state.activeEffectId, state.liveEffectMetaId !== state.activeEffectId);
   renderCameraStarting();
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
@@ -397,11 +437,13 @@ async function startCamera() {
 function renderLiveCamera() {
   const card = document.querySelector("#camera-card");
   if (!card || !state.cameraStream) return;
+  setCameraImmersive(true);
   const effect = getEffect(state.activeEffectId);
+  const liveMeta = ensureLiveEffectMeta(effect.id, false);
   card.innerHTML = `
     <div class="live-camera-stage">
       <video id="camera-video" autoplay playsinline muted style="filter:${escapeHtml(effect.liveFilter || "none")}"></video>
-      <div id="camera-live-overlay" class="camera-overlay-layer">${effectLiveOverlayHtml(effect.id)}</div>
+      <div id="camera-live-overlay" class="camera-overlay-layer">${effectLiveOverlayHtml(effect.id, liveMeta)}</div>
       <div id="camera-flash" class="camera-flash"></div>
       <div class="camera-top-controls">
         <button id="close-camera" class="camera-round-button" type="button" aria-label="Fechar câmera">×</button>
@@ -421,10 +463,7 @@ function renderLiveCamera() {
   const video = document.querySelector("#camera-video");
   video.srcObject = state.cameraStream;
   video.play().catch(() => {});
-  bindEffectSelector(effectId => {
-    state.activeEffectId = getEffect(effectId).id;
-    updateLiveEffect();
-  });
+  bindEffectSelector(effectId => selectLiveEffect(effectId, true));
   document.querySelector("#flip-camera").onclick = async () => {
     state.cameraFacingMode = state.cameraFacingMode === "environment" ? "user" : "environment";
     await startCamera();
@@ -498,7 +537,8 @@ async function handleCameraCapture() {
   try {
     const originalFile = await captureOriginalFromCamera();
     const effectId = state.activeEffectId;
-    const effectMeta = createEffectMeta(effectId);
+    const liveMeta = ensureLiveEffectMeta(effectId, false);
+    const effectMeta = { ...liveMeta, capturedAt: new Date().toISOString() };
     stopCameraStream();
     await setCapturedOriginal(originalFile, effectId, effectMeta);
   } catch (error) {
@@ -609,6 +649,7 @@ function renderPhotoPreview() {
   document.querySelector("#retake-photo").onclick = async () => {
     if (state.selectedFile) clearUploadRecovery(state.selectedFile, currentUploadVariantKey());
     await clearSelectedFile(true);
+    state.liveEffectMetaId = null;
     renderCameraEmpty();
     startCamera();
   };

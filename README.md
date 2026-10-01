@@ -1,4 +1,17 @@
-# Pedro 18 — Momentos / Filtros V1
+# Pedro 18 — Momentos / Filtros V2
+
+## Novidades da V2
+
+- câmera interna em modo imersivo, ocupando toda a tela acima da navegação inferior;
+- filtros de temperatura visíveis em tempo real: Dourado, Quente, Âmbar, Champagne, Rosé, Frio, Blue Hour e Noturno;
+- molduras também visíveis antes do clique;
+- Raridade, Detector de Histórias, Arquivo 18, Flagra e Memória geram o resultado na câmera e preservam o mesmo resultado na foto capturada;
+- novas molduras Editorial 26.12, Filme 35 e Garça · 26.12;
+- capas dos filtros redesenhadas para representar visualmente o resultado;
+- posição horizontal da lista de filtros é preservada ao trocar efeitos, inclusive na prévia;
+- não há desbloqueios, horários ou categorias progressivas: todos os efeitos ficam disponíveis.
+
+**Quem já executou `upgrade_final_to_filters_v1.sql` não precisa executar nenhum SQL adicional para a V2.**
 
 Aplicativo web de fotos da festa usando **Google Drive** para arquivos, **Supabase** para usuários/feed/curtidas e **Vercel** para o frontend + API.
 

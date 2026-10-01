@@ -2,90 +2,26 @@ const PUBLISHED_TYPE = "image/jpeg";
 const MAX_RENDER_DIMENSION = 2600;
 
 export const effects = Object.freeze([
-  {
-    id: "original",
-    name: "Original",
-    short: "Original",
-    description: "Sem efeito.",
-    liveFilter: "none",
-  },
-  {
-    id: "dourado",
-    name: "Dourado",
-    short: "Dourado",
-    description: "Tons dourados suaves para a iluminação da festa.",
-    liveFilter: "contrast(1.04) saturate(.96) sepia(.18) brightness(.99)",
-  },
-  {
-    id: "quente",
-    name: "Quente",
-    short: "Quente",
-    description: "Pele e luzes mais quentes sem moldura.",
-    liveFilter: "contrast(1.03) saturate(1.05) sepia(.12) brightness(1.01)",
-  },
-  {
-    id: "frio",
-    name: "Frio",
-    short: "Frio",
-    description: "Azuis discretos e atmosfera mais fria.",
-    liveFilter: "contrast(1.04) saturate(.98) hue-rotate(5deg) brightness(.99)",
-  },
-  {
-    id: "arquivo18",
-    name: "Arquivo 18",
-    short: "Arquivo 18",
-    description: "Registro confidencial da noite.",
-    liveFilter: "contrast(1.08) saturate(.78)",
-  },
-  {
-    id: "flagra",
-    name: "Flagra da Festa",
-    short: "Flagra",
-    description: "Paparazzi, flash e registro nº 018.",
-    liveFilter: "contrast(1.16) saturate(.96) brightness(1.04)",
-  },
-  {
-    id: "familia-nao",
-    name: "A família NÃO vai ver",
-    short: "Confidencial",
-    description: "Tarjas e selo de arquivo comprometedor.",
-    liveFilter: "contrast(1.12) saturate(.62)",
-  },
-  {
-    id: "memoria",
-    name: "Memória Desbloqueada",
-    short: "Memória",
-    description: "Uma conquista da noite em estilo videogame.",
-    liveFilter: "contrast(1.08) saturate(1.04) brightness(.98)",
-  },
-  {
-    id: "raridade",
-    name: "Raridade da Foto",
-    short: "Raridade",
-    description: "A foto recebe uma raridade aleatória.",
-    liveFilter: "contrast(1.06) saturate(1.12)",
-  },
-  {
-    id: "detector-historias",
-    name: "Detector de Histórias",
-    short: "Detector",
-    description: "Conta histórias que podem e não podem ser contadas.",
-    liveFilter: "contrast(1.05) saturate(1.04) sepia(.05)",
-  },
-  {
-    id: "descartavel18",
-    name: "Câmera Descartável 18",
-    short: "Descartável",
-    description: "Filme, grão, flash e data impressa.",
-    liveFilter: "contrast(1.06) saturate(.86) sepia(.12) brightness(1.04)",
-  },
-  {
-    id: "primeira-noite",
-    name: "Primeira Noite dos 18",
-    short: "Primeira noite",
-    description: "Tratamento dourado e editorial da festa.",
-    liveFilter: "contrast(1.08) saturate(.92) sepia(.13) brightness(.96)",
-  },
+  { id: "original", name: "Original", short: "Original", description: "Sem efeito.", liveFilter: "none" },
+  { id: "dourado", name: "Dourado", short: "Dourado", description: "Dourado discreto, pensado para luzes quentes da festa.", liveFilter: "contrast(1.04) saturate(.96) sepia(.18) brightness(.99)" },
+  { id: "quente", name: "Quente", short: "Quente", description: "Temperatura quente natural, preservando tons de pele.", liveFilter: "contrast(1.03) saturate(1.05) sepia(.12) brightness(1.01)" },
+  { id: "ambar", name: "Âmbar", short: "Âmbar", description: "Luz âmbar mais marcada, inspirada em iluminação de salão.", liveFilter: "contrast(1.05) saturate(1.04) sepia(.28) brightness(1.01)" },
+  { id: "champagne", name: "Champagne", short: "Champagne", description: "Quente, claro e suave, com aparência de fotografia social.", liveFilter: "contrast(.98) saturate(.86) sepia(.14) brightness(1.06)" },
+  { id: "rose", name: "Rosé", short: "Rosé", description: "Calor suave com um toque rosado, sem exagerar a pele.", liveFilter: "contrast(1.02) saturate(.96) sepia(.09) hue-rotate(-7deg) brightness(1.02)" },
+  { id: "frio", name: "Frio", short: "Frio", description: "Temperatura fria e limpa.", liveFilter: "contrast(1.04) saturate(.98) hue-rotate(5deg) brightness(.99)" },
+  { id: "blue-hour", name: "Blue Hour", short: "Blue Hour", description: "Azul noturno elegante para luzes frias e LED.", liveFilter: "contrast(1.09) saturate(.82) hue-rotate(8deg) brightness(.96)" },
+  { id: "noturno", name: "Noturno", short: "Noturno", description: "Contraste de festa noturna, sombras mais profundas e cor controlada.", liveFilter: "contrast(1.16) saturate(.78) brightness(.92)" },
+  { id: "arquivo18", name: "Arquivo 18", short: "Arquivo 18", description: "Ficha editorial de arquivo da noite, com número único.", liveFilter: "contrast(1.08) saturate(.78)" },
+  { id: "flagra", name: "Flagra da Festa", short: "Flagra", description: "Visual de foto de imprensa com flash e registro do momento.", liveFilter: "contrast(1.16) saturate(.96) brightness(1.04)" },
+  { id: "familia-nao", name: "A família NÃO vai ver", short: "Confidencial", description: "Documento censurado com tarjas e selo confidencial.", liveFilter: "contrast(1.12) saturate(.62)" },
+  { id: "memoria", name: "Memória Desbloqueada", short: "Memória", description: "Registro da noite tratado como memória conquistada.", liveFilter: "contrast(1.08) saturate(1.04) brightness(.98)" },
+  { id: "raridade", name: "Raridade da Foto", short: "Raridade", description: "Classificação aleatória exibida antes do clique e preservada na foto.", liveFilter: "contrast(1.06) saturate(1.12)" },
+  { id: "detector-historias", name: "Detector de Histórias", short: "Detector", description: "Resultado aleatório aparece ao vivo e fica gravado na foto.", liveFilter: "contrast(1.05) saturate(1.04) sepia(.05)" },
+  { id: "descartavel18", name: "Câmera Descartável 18", short: "Descartável", description: "Filme, grão, vazamento de luz e data impressa.", liveFilter: "contrast(1.06) saturate(.86) sepia(.12) brightness(1.04)" },
+  { id: "primeira-noite", name: "Primeira Noite dos 18", short: "Primeira noite", description: "Moldura social em azul-marinho e dourado, inspirada na identidade da festa.", liveFilter: "contrast(1.08) saturate(.92) sepia(.13) brightness(.96)" },
+  { id: "editorial2612", name: "Editorial 26.12", short: "Editorial", description: "Composição assimétrica de revista, discreta e elegante.", liveFilter: "contrast(1.06) saturate(.9) brightness(.99)" },
+  { id: "filme35", name: "Filme 35", short: "Filme 35", description: "Borda de negativo 35 mm com numeração do frame.", liveFilter: "contrast(1.07) saturate(.88) sepia(.07) brightness(.99)" },
+  { id: "cartao-garca", name: "Garça · 26.12", short: "Garça 26.12", description: "Moldura de lembrança da noite com localização e data.", liveFilter: "contrast(1.04) saturate(.94) sepia(.06) brightness(1.01)" },
 ]);
 
 const effectMap = new Map(effects.map(effect => [effect.id, effect]));
@@ -132,41 +68,53 @@ export function createEffectMeta(effectId) {
       return { capturedAt, rarity: rarity.label, rarityCode: rarity.code };
     }
     case "detector-historias":
-      return {
-        capturedAt,
-        tellable: randomInt(2, 28),
-        classified: randomInt(18, 87),
-      };
+      return { capturedAt, tellable: randomInt(2, 28), classified: randomInt(18, 87) };
     case "memoria":
       return { capturedAt, memoryId: randomInt(18, 999), xp: randomInt(180, 1818) };
     case "arquivo18":
       return { capturedAt, archiveId: `18-${String(randomInt(1, 9999)).padStart(4, "0")}` };
     case "flagra":
       return { capturedAt, flagraId: String(randomInt(1, 999)).padStart(3, "0") };
+    case "filme35":
+      return { capturedAt, frameNumber: String(randomInt(1, 36)).padStart(2, "0") };
     default:
       return { capturedAt };
   }
 }
 
-export function effectLiveOverlayHtml(effectId) {
+function formatLiveCapture(meta) {
+  const date = new Date(meta?.capturedAt || Date.now());
+  const hh = String(date.getHours()).padStart(2, "0");
+  const min = String(date.getMinutes()).padStart(2, "0");
+  return `${hh}:${min}`;
+}
+
+export function effectLiveOverlayHtml(effectId, meta = {}) {
   const effect = getEffect(effectId);
+  const time = formatLiveCapture(meta);
   switch (effect.id) {
     case "arquivo18":
-      return `<div class="live-overlay overlay-archive"><span>ARQUIVO 018</span><strong>REGISTRO OFICIAL</strong><small>26.12.2026 • GARÇA/SP</small></div>`;
+      return `<div class="live-overlay overlay-archive"><div class="archive-rule"></div><span>PEDRO / ARQUIVO 018</span><strong>${meta.archiveId || "18-0000"}</strong><small>26.12.2026 · GARÇA, SP</small><em>REGISTRO DA NOITE</em></div>`;
     case "flagra":
-      return `<div class="live-overlay overlay-flagra"><span>● REC</span><strong>FLAGRA Nº 018</strong><small>26.12.2026</small></div>`;
+      return `<div class="live-overlay overlay-flagra"><span><b>●</b> ${time}</span><strong>FLAGRA ${meta.flagraId || "018"}</strong><small>PEDRO 18 · 26 DEZ 2026</small></div>`;
     case "familia-nao":
-      return `<div class="live-overlay overlay-classified"><span>CONFIDENCIAL</span><strong>NÃO ENVIAR AO GRUPO DA FAMÍLIA</strong></div>`;
+      return `<div class="live-overlay overlay-classified"><div class="classified-mark">CONFIDENCIAL</div><div class="redaction redaction-a"></div><div class="redaction redaction-b"></div><strong>NÃO ENVIAR AO GRUPO DA FAMÍLIA</strong><small>PEDRO 18 · DOCUMENTO DE ACESSO RESTRITO</small></div>`;
     case "memoria":
-      return `<div class="live-overlay overlay-memory"><span>MEMÓRIA DESBLOQUEADA</span><strong>PEDRO 18</strong></div>`;
+      return `<div class="live-overlay overlay-memory"><span>MEMÓRIA Nº ${meta.memoryId || "018"}</span><strong>26 · 12 · 2026</strong><small>+${meta.xp || 180} XP · PEDRO 18</small></div>`;
     case "raridade":
-      return `<div class="live-overlay overlay-rarity"><span>ANALISANDO RARIDADE…</span><strong>???</strong></div>`;
+      return `<div class="live-overlay overlay-rarity ${meta.rarityCode === "X" ? "rarity-secret" : ""}"><span>RARIDADE DA FOTO</span><strong>${meta.rarity || "RARA"}</strong><small>PEDRO 18 · EDIÇÃO DA NOITE</small></div>`;
     case "detector-historias":
-      return `<div class="live-overlay overlay-detector"><span>DETECTOR DE HISTÓRIAS</span><strong>ANALISANDO…</strong></div>`;
+      return `<div class="live-overlay overlay-detector"><span>DETECTOR DE HISTÓRIAS</span><div><strong>${meta.tellable ?? 12}</strong><small>podem ser contadas</small></div><div><strong>${meta.classified ?? 43}</strong><small>melhor não contar</small></div><em>resultado totalmente científico</em></div>`;
     case "descartavel18":
-      return `<div class="live-overlay overlay-disposable"><span>PEDRO18 • 018</span><strong>26 12 '26</strong></div>`;
+      return `<div class="live-overlay overlay-disposable"><span>PEDRO 18</span><strong>26 12 '26</strong><small>${time}</small></div>`;
     case "primeira-noite":
-      return `<div class="live-overlay overlay-first-night"><span>PEDRO XVIII</span><strong>PRIMEIRA NOITE DOS 18</strong><small>26 • 12 • 2026</small></div>`;
+      return `<div class="live-overlay overlay-first-night"><span>PEDRO</span><strong>XVIII</strong><small>PRIMEIRA NOITE · 26.12.2026 · GARÇA</small></div>`;
+    case "editorial2612":
+      return `<div class="live-overlay overlay-editorial"><span>26 / 12</span><strong>PEDRO XVIII</strong><small>GARÇA · SP</small><i>uma noite para guardar</i></div>`;
+    case "filme35":
+      return `<div class="live-overlay overlay-film35"><div class="film-edge film-top">PEDRO18 · 35MM · FRAME ${meta.frameNumber || "18"}</div><div class="film-edge film-bottom">26.12.2026 · GARÇA SP · ${time}</div></div>`;
+    case "cartao-garca":
+      return `<div class="live-overlay overlay-postcard"><span>GARÇA</span><strong>26.12.2026</strong><small>PEDRO · XVIII</small></div>`;
     default:
       return "";
   }
@@ -325,142 +273,163 @@ function strokeRoundRect(ctx, x, y, width, height, radius, stroke, lineWidth) {
 
 function drawArchive(ctx, width, height, meta) {
   adjustPixels(ctx, width, height, { contrast: 1.08, saturation: 0.76, warmth: 2, brightness: -2 });
-  drawVignette(ctx, width, height, 0.18);
+  drawVignette(ctx, width, height, 0.16);
   const u = Math.min(width, height);
-  const pad = u * 0.045;
-  const line = Math.max(2, u * 0.0025);
+  const pad = u * 0.05;
+  const fine = Math.max(2, u * 0.0022);
   ctx.strokeStyle = "rgba(243,233,208,.82)";
-  ctx.lineWidth = line;
+  ctx.lineWidth = fine;
   ctx.strokeRect(pad, pad, width - pad * 2, height - pad * 2);
-  ctx.fillStyle = "rgba(8,18,29,.68)";
-  ctx.fillRect(pad, pad, width - pad * 2, u * 0.16);
-  ctx.fillStyle = "#f5ead2";
-  ctx.font = `700 ${u * 0.052}px system-ui, sans-serif`;
-  ctx.fillText("ARQUIVO 018", pad * 1.45, pad + u * 0.067);
-  ctx.font = `600 ${u * 0.023}px system-ui, sans-serif`;
-  ctx.fillStyle = "rgba(245,234,210,.78)";
-  ctx.fillText(`REGISTRO ${meta?.archiveId || "18-0000"} • 26.12.2026 • GARÇA/SP`, pad * 1.45, pad + u * 0.112);
+  ctx.beginPath();
+  ctx.moveTo(pad, pad + u * 0.13); ctx.lineTo(width - pad, pad + u * 0.13);
+  ctx.stroke();
+  ctx.fillStyle = "rgba(243,233,208,.9)";
+  ctx.font = `600 ${u * 0.022}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+  ctx.fillText("PEDRO / ARQUIVO 018", pad * 1.18, pad + u * 0.05);
+  ctx.fillStyle = "#f7eed9";
+  ctx.font = `700 ${u * 0.053}px Georgia, serif`;
+  ctx.fillText(meta?.archiveId || "18-0000", pad * 1.18, pad + u * 0.108);
+  ctx.fillStyle = "rgba(247,238,217,.7)";
+  ctx.font = `500 ${u * 0.019}px system-ui, sans-serif`;
+  ctx.fillText("26.12.2026 · GARÇA, SP", width - pad - u * 0.31, pad + u * 0.051);
   ctx.save();
-  ctx.translate(width - pad * 1.05, height * 0.52);
+  ctx.translate(width - pad * 0.6, height * 0.5);
   ctx.rotate(Math.PI / 2);
-  ctx.font = `700 ${u * 0.022}px system-ui, sans-serif`;
-  ctx.fillStyle = "rgba(245,234,210,.7)";
-  ctx.fillText("REGISTRO OFICIAL DA NOITE", 0, 0);
+  ctx.font = `600 ${u * 0.017}px system-ui, sans-serif`;
+  ctx.letterSpacing = `${u * 0.004}px`;
+  ctx.fillStyle = "rgba(247,238,217,.62)";
+  ctx.fillText("REGISTRO DA NOITE · PEDRO XVIII", -u * 0.18, 0);
   ctx.restore();
 }
 
 function drawFlagra(ctx, width, height, meta) {
-  adjustPixels(ctx, width, height, { contrast: 1.16, saturation: 0.94, warmth: -2, brightness: 5 });
+  adjustPixels(ctx, width, height, { contrast: 1.15, saturation: 0.92, warmth: -2, brightness: 6 });
   const u = Math.min(width, height);
-  const flash = ctx.createRadialGradient(width * 0.5, height * 0.12, 0, width * 0.5, height * 0.12, u * 0.58);
-  flash.addColorStop(0, "rgba(255,255,255,.25)");
+  const flash = ctx.createRadialGradient(width * 0.54, height * 0.1, 0, width * 0.54, height * 0.1, u * 0.58);
+  flash.addColorStop(0, "rgba(255,255,255,.28)");
   flash.addColorStop(1, "rgba(255,255,255,0)");
-  ctx.fillStyle = flash;
-  ctx.fillRect(0, 0, width, height);
+  ctx.fillStyle = flash; ctx.fillRect(0, 0, width, height);
   const pad = u * 0.045;
-  const bracket = u * 0.09;
-  ctx.strokeStyle = "rgba(255,255,255,.9)";
-  ctx.lineWidth = Math.max(3, u * 0.004);
-  [[pad,pad,1,1],[width-pad,pad,-1,1],[pad,height-pad,1,-1],[width-pad,height-pad,-1,-1]].forEach(([x,y,sx,sy]) => {
-    ctx.beginPath(); ctx.moveTo(x + bracket * sx, y); ctx.lineTo(x, y); ctx.lineTo(x, y + bracket * sy); ctx.stroke();
-  });
-  const stamp = formatCapture(meta);
-  fillRoundRect(ctx, pad, height - pad - u * 0.14, width - pad * 2, u * 0.14, u * 0.018, "rgba(3,8,14,.63)");
+  const bottom = u * 0.135;
+  ctx.fillStyle = "rgba(4,8,13,.72)";
+  ctx.fillRect(0, height - bottom, width, bottom);
   ctx.fillStyle = "#fff";
-  ctx.font = `800 ${u * 0.043}px system-ui, sans-serif`;
-  ctx.fillText(`FLAGRA Nº ${meta?.flagraId || "018"}`, pad * 1.45, height - pad - u * 0.074);
-  ctx.font = `600 ${u * 0.024}px system-ui, sans-serif`;
-  ctx.fillStyle = "rgba(255,255,255,.8)";
-  ctx.fillText(`${stamp.date}  ${stamp.time}  •  PEDRO 18`, pad * 1.45, height - pad - u * 0.035);
-  ctx.fillStyle = "#ff5757";
-  ctx.beginPath(); ctx.arc(width - pad * 1.55, pad * 1.55, u * 0.012, 0, Math.PI * 2); ctx.fill();
+  ctx.font = `800 ${u * 0.044}px system-ui, sans-serif`;
+  ctx.fillText(`FLAGRA ${meta?.flagraId || "018"}`, pad, height - bottom + u * 0.058);
+  ctx.fillStyle = "rgba(255,255,255,.72)";
+  ctx.font = `600 ${u * 0.019}px system-ui, sans-serif`;
+  ctx.fillText(`PEDRO 18 · ${formatCapture(meta).date} · ${formatCapture(meta).time}`, pad, height - bottom + u * 0.096);
+  ctx.fillStyle = "#ef4b4b";
+  ctx.beginPath(); ctx.arc(width - pad, height - bottom + u * 0.052, u * 0.009, 0, Math.PI * 2); ctx.fill();
+  const bracket = u * 0.065;
+  ctx.strokeStyle = "rgba(255,255,255,.68)";
+  ctx.lineWidth = Math.max(2, u * 0.0028);
+  [[pad,pad,1,1],[width-pad,pad,-1,1]].forEach(([x,y,sx,sy]) => { ctx.beginPath(); ctx.moveTo(x + bracket*sx,y); ctx.lineTo(x,y); ctx.lineTo(x,y+bracket*sy); ctx.stroke(); });
 }
 
 function drawFamilyNo(ctx, width, height) {
   adjustPixels(ctx, width, height, { contrast: 1.13, saturation: 0.58, warmth: -1, brightness: -3 });
-  drawVignette(ctx, width, height, 0.33);
+  drawVignette(ctx, width, height, 0.3);
   const u = Math.min(width, height);
-  const pad = u * 0.045;
+  const pad = u * 0.05;
+  ctx.strokeStyle = "rgba(239,232,218,.55)";
+  ctx.lineWidth = Math.max(2, u * 0.002);
+  ctx.strokeRect(pad, pad, width - pad * 2, height - pad * 2);
   ctx.save();
-  ctx.translate(width * 0.5, height * 0.18);
-  ctx.rotate(-0.055);
-  fillRoundRect(ctx, -u * 0.34, -u * 0.065, u * 0.68, u * 0.13, u * 0.01, "rgba(153,18,26,.86)");
-  strokeRoundRect(ctx, -u * 0.34, -u * 0.065, u * 0.68, u * 0.13, u * 0.01, "rgba(255,235,226,.75)", Math.max(2, u * 0.003));
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillStyle = "#fff1e7";
-  ctx.font = `900 ${u * 0.052}px system-ui, sans-serif`;
+  ctx.translate(width * 0.5, height * 0.16);
+  ctx.rotate(-0.035);
+  ctx.strokeStyle = "rgba(180,37,47,.92)";
+  ctx.lineWidth = Math.max(3, u * 0.0045);
+  ctx.strokeRect(-u * 0.29, -u * 0.055, u * 0.58, u * 0.11);
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.fillStyle = "rgba(255,229,221,.96)";
+  ctx.font = `900 ${u * 0.043}px ui-monospace, monospace`;
   ctx.fillText("CONFIDENCIAL", 0, 0);
   ctx.restore();
-  ctx.fillStyle = "rgba(0,0,0,.84)";
-  ctx.fillRect(pad, height - pad - u * 0.16, width - pad * 2, u * 0.16);
-  ctx.fillStyle = "#fff";
-  ctx.textAlign = "center";
-  ctx.font = `800 ${u * 0.038}px system-ui, sans-serif`;
-  ctx.fillText("NÃO ENVIAR AO GRUPO DA FAMÍLIA", width / 2, height - pad - u * 0.09);
-  ctx.font = `600 ${u * 0.022}px system-ui, sans-serif`;
-  ctx.fillStyle = "rgba(255,255,255,.68)";
-  ctx.fillText("ARQUIVO CLASSIFICADO • PEDRO 18", width / 2, height - pad - u * 0.045);
+  ctx.fillStyle = "rgba(0,0,0,.88)";
+  ctx.fillRect(pad * 1.25, height - pad - u * 0.18, width * 0.43, u * 0.027);
+  ctx.fillRect(width * 0.32, height - pad - u * 0.13, width * 0.5, u * 0.027);
   ctx.textAlign = "left";
+  ctx.fillStyle = "rgba(255,255,255,.86)";
+  ctx.font = `700 ${u * 0.023}px system-ui, sans-serif`;
+  ctx.fillText("NÃO ENVIAR AO GRUPO DA FAMÍLIA", pad * 1.25, height - pad - u * 0.055);
+  ctx.fillStyle = "rgba(255,255,255,.5)";
+  ctx.font = `600 ${u * 0.015}px system-ui, sans-serif`;
+  ctx.fillText("PEDRO 18 · ACESSO RESTRITO", pad * 1.25, height - pad - u * 0.02);
 }
 
 function drawMemory(ctx, width, height, meta) {
   adjustPixels(ctx, width, height, { contrast: 1.08, saturation: 1.04, warmth: -3, brightness: -2 });
-  drawVignette(ctx, width, height, 0.16);
+  drawVignette(ctx, width, height, 0.14);
   const u = Math.min(width, height);
-  const pad = u * 0.045;
-  const boxHeight = u * 0.205;
-  fillRoundRect(ctx, pad, height - pad - boxHeight, width - pad * 2, boxHeight, u * 0.025, "rgba(5,14,28,.82)");
-  strokeRoundRect(ctx, pad, height - pad - boxHeight, width - pad * 2, boxHeight, u * 0.025, "rgba(216,179,106,.78)", Math.max(2, u * 0.003));
+  const pad = u * 0.05;
+  const y = height - pad - u * 0.17;
+  ctx.fillStyle = "rgba(5,14,28,.77)";
+  ctx.fillRect(pad, y, width - pad * 2, u * 0.17);
+  ctx.strokeStyle = "rgba(216,179,106,.72)";
+  ctx.lineWidth = Math.max(2, u * 0.002);
+  ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(width - pad, y); ctx.stroke();
   ctx.fillStyle = "#d8b36a";
-  ctx.font = `800 ${u * 0.027}px system-ui, sans-serif`;
-  ctx.fillText("MEMÓRIA DESBLOQUEADA", pad * 1.55, height - pad - boxHeight + u * 0.055);
-  ctx.fillStyle = "#fff8eb";
-  ctx.font = `700 ${u * 0.048}px Georgia, serif`;
-  ctx.fillText("Pedro 18", pad * 1.55, height - pad - boxHeight + u * 0.116);
-  ctx.fillStyle = "rgba(255,248,235,.7)";
-  ctx.font = `600 ${u * 0.022}px system-ui, sans-serif`;
-  ctx.fillText(`#${meta?.memoryId || "018"}  •  +${meta?.xp || 180} XP  •  26.12.2026`, pad * 1.55, height - pad - boxHeight + u * 0.163);
+  ctx.font = `700 ${u * 0.019}px system-ui, sans-serif`;
+  ctx.fillText(`MEMÓRIA Nº ${meta?.memoryId || "018"}`, pad * 1.25, y + u * 0.043);
+  ctx.fillStyle = "#f8f0df";
+  ctx.font = `500 ${u * 0.05}px Georgia, serif`;
+  ctx.fillText("26 · 12 · 2026", pad * 1.25, y + u * 0.103);
+  ctx.fillStyle = "rgba(248,240,223,.58)";
+  ctx.font = `600 ${u * 0.017}px system-ui, sans-serif`;
+  ctx.fillText(`+${meta?.xp || 180} XP · PEDRO XVIII`, pad * 1.25, y + u * 0.143);
 }
 
 function drawRarity(ctx, width, height, meta) {
   adjustPixels(ctx, width, height, { contrast: 1.07, saturation: 1.13, warmth: 3, brightness: 0 });
-  drawVignette(ctx, width, height, 0.14);
+  drawVignette(ctx, width, height, 0.13);
   const u = Math.min(width, height);
-  const pad = u * 0.045;
+  const pad = u * 0.052;
   const rarity = String(meta?.rarity || "RARA");
   const secret = meta?.rarityCode === "X";
-  const widthBox = Math.min(width - pad * 2, u * (secret ? 0.8 : 0.58));
-  fillRoundRect(ctx, (width - widthBox) / 2, pad, widthBox, u * 0.145, u * 0.02, secret ? "rgba(105,8,20,.86)" : "rgba(7,20,36,.78)");
-  strokeRoundRect(ctx, (width - widthBox) / 2, pad, widthBox, u * 0.145, u * 0.02, secret ? "rgba(255,120,120,.9)" : "rgba(216,179,106,.9)", Math.max(2, u * 0.003));
+  ctx.strokeStyle = secret ? "rgba(209,70,78,.92)" : "rgba(216,179,106,.78)";
+  ctx.lineWidth = Math.max(2, u * 0.0024);
+  ctx.strokeRect(pad, pad, width - pad * 2, height - pad * 2);
   ctx.textAlign = "center";
-  ctx.fillStyle = secret ? "#ffd8d8" : "#d8b36a";
-  ctx.font = `800 ${u * 0.021}px system-ui, sans-serif`;
-  ctx.fillText("RARIDADE DA FOTO", width / 2, pad + u * 0.045);
-  ctx.fillStyle = "#fff8eb";
-  ctx.font = `900 ${u * (secret ? 0.035 : 0.052)}px system-ui, sans-serif`;
-  ctx.fillText(rarity, width / 2, pad + u * 0.105);
+  ctx.fillStyle = secret ? "#ffd3d6" : "#e7c77f";
+  ctx.font = `700 ${u * 0.017}px system-ui, sans-serif`;
+  ctx.fillText("RARIDADE DA FOTO · PEDRO 18", width / 2, pad + u * 0.038);
+  ctx.fillStyle = "rgba(3,10,18,.64)";
+  ctx.fillRect(width * 0.18, height - pad - u * 0.135, width * 0.64, u * 0.135);
+  ctx.fillStyle = "#fff8e8";
+  ctx.font = `500 ${u * (secret ? 0.038 : 0.06)}px Georgia, serif`;
+  ctx.fillText(rarity, width / 2, height - pad - u * 0.064);
+  ctx.fillStyle = secret ? "rgba(255,211,214,.75)" : "rgba(231,199,127,.75)";
+  ctx.font = `600 ${u * 0.016}px system-ui, sans-serif`;
+  ctx.fillText("EDIÇÃO DA NOITE · 26.12.2026", width / 2, height - pad - u * 0.026);
   ctx.textAlign = "left";
 }
 
 function drawDetector(ctx, width, height, meta) {
   adjustPixels(ctx, width, height, { contrast: 1.05, saturation: 1.03, warmth: 4, brightness: -1 });
-  drawVignette(ctx, width, height, 0.13);
+  drawVignette(ctx, width, height, 0.12);
   const u = Math.min(width, height);
-  const pad = u * 0.045;
-  const boxHeight = u * 0.25;
-  fillRoundRect(ctx, pad, height - pad - boxHeight, width - pad * 2, boxHeight, u * 0.022, "rgba(6,18,29,.83)");
-  strokeRoundRect(ctx, pad, height - pad - boxHeight, width - pad * 2, boxHeight, u * 0.022, "rgba(82,224,185,.72)", Math.max(2, u * 0.0025));
-  ctx.fillStyle = "#52e0b9";
-  ctx.font = `800 ${u * 0.024}px system-ui, sans-serif`;
-  ctx.fillText("DETECTOR DE HISTÓRIAS", pad * 1.5, height - pad - boxHeight + u * 0.052);
+  const pad = u * 0.05;
+  const y = height - pad - u * 0.205;
+  ctx.fillStyle = "rgba(3,17,22,.78)";
+  ctx.fillRect(pad, y, width - pad * 2, u * 0.205);
+  ctx.strokeStyle = "rgba(82,224,185,.7)";
+  ctx.lineWidth = Math.max(2, u * 0.002);
+  ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(width - pad, y); ctx.stroke();
+  ctx.fillStyle = "#65dfbf";
+  ctx.font = `700 ${u * 0.018}px ui-monospace, monospace`;
+  ctx.fillText("DETECTOR DE HISTÓRIAS", pad * 1.25, y + u * 0.038);
   ctx.fillStyle = "#fff";
-  ctx.font = `700 ${u * 0.03}px system-ui, sans-serif`;
-  ctx.fillText(`Podem ser contadas: ${meta?.tellable ?? 12}`, pad * 1.5, height - pad - boxHeight + u * 0.115);
-  ctx.fillText(`Melhor não contar: ${meta?.classified ?? 43}`, pad * 1.5, height - pad - boxHeight + u * 0.166);
-  ctx.fillStyle = "rgba(255,255,255,.62)";
-  ctx.font = `600 ${u * 0.019}px system-ui, sans-serif`;
-  ctx.fillText("Resultado totalmente científico • Pedro 18", pad * 1.5, height - pad - boxHeight + u * 0.211);
+  ctx.font = `500 ${u * 0.052}px Georgia, serif`;
+  ctx.fillText(String(meta?.tellable ?? 12), pad * 1.25, y + u * 0.112);
+  ctx.fillText(String(meta?.classified ?? 43), width * 0.54, y + u * 0.112);
+  ctx.fillStyle = "rgba(255,255,255,.64)";
+  ctx.font = `600 ${u * 0.016}px system-ui, sans-serif`;
+  ctx.fillText("PODEM SER CONTADAS", pad * 1.25, y + u * 0.146);
+  ctx.fillText("MELHOR NÃO CONTAR", width * 0.54, y + u * 0.146);
+  ctx.fillStyle = "rgba(101,223,191,.55)";
+  ctx.font = `500 ${u * 0.014}px system-ui, sans-serif`;
+  ctx.fillText("resultado totalmente científico · pedro 18", pad * 1.25, y + u * 0.184);
 }
 
 function drawDisposable(ctx, width, height, meta) {
@@ -478,39 +447,131 @@ function drawDisposable(ctx, width, height, meta) {
 
 function drawFirstNight(ctx, width, height) {
   adjustPixels(ctx, width, height, { contrast: 1.09, saturation: 0.9, warmth: 10, brightness: -5 });
-  drawVignette(ctx, width, height, 0.3);
+  drawVignette(ctx, width, height, 0.25);
+  const u = Math.min(width, height);
+  const pad = u * 0.052;
+  ctx.strokeStyle = "rgba(216,179,106,.7)";
+  ctx.lineWidth = Math.max(2, u * 0.002);
+  ctx.beginPath(); ctx.moveTo(pad, pad); ctx.lineTo(width - pad, pad); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(pad, height - pad); ctx.lineTo(width - pad, height - pad); ctx.stroke();
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#f0ddb0";
+  ctx.font = `500 ${u * 0.03}px Georgia, serif`;
+  ctx.fillText("PEDRO", width / 2, height - pad - u * 0.105);
+  ctx.font = `500 ${u * 0.066}px Georgia, serif`;
+  ctx.fillText("XVIII", width / 2, height - pad - u * 0.045);
+  ctx.fillStyle = "rgba(240,221,176,.62)";
+  ctx.font = `600 ${u * 0.015}px system-ui, sans-serif`;
+  ctx.fillText("PRIMEIRA NOITE · 26.12.2026 · GARÇA", width / 2, height - pad + u * 0.032);
+  ctx.textAlign = "left";
+}
+
+function drawEditorial2612(ctx, width, height) {
+  adjustPixels(ctx, width, height, { contrast: 1.06, saturation: 0.9, warmth: 2, brightness: -1 });
   const u = Math.min(width, height);
   const pad = u * 0.05;
-  ctx.strokeStyle = "rgba(216,179,106,.8)";
-  ctx.lineWidth = Math.max(2, u * 0.0022);
+  ctx.fillStyle = "rgba(5,13,24,.68)";
+  ctx.fillRect(pad, pad, u * 0.19, u * 0.19);
+  ctx.fillStyle = "#f4ecda";
+  ctx.font = `500 ${u * 0.058}px Georgia, serif`;
+  ctx.fillText("26", pad * 1.25, pad + u * 0.073);
+  ctx.font = `500 ${u * 0.031}px Georgia, serif`;
+  ctx.fillText("/ 12", pad * 1.25, pad + u * 0.122);
+  ctx.fillStyle = "rgba(244,236,218,.7)";
+  ctx.font = `600 ${u * 0.015}px system-ui, sans-serif`;
+  ctx.fillText("PEDRO XVIII", pad * 1.25, pad + u * 0.16);
+  ctx.save();
+  ctx.translate(width - pad * 0.7, height * 0.68);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillStyle = "rgba(244,236,218,.74)";
+  ctx.font = `500 ${u * 0.017}px system-ui, sans-serif`;
+  ctx.fillText("GARÇA · SP · UMA NOITE PARA GUARDAR", 0, 0);
+  ctx.restore();
+  ctx.strokeStyle = "rgba(244,236,218,.42)";
+  ctx.lineWidth = Math.max(2, u * 0.0018);
+  ctx.beginPath(); ctx.moveTo(pad, height - pad); ctx.lineTo(width * 0.46, height - pad); ctx.stroke();
+}
+
+function drawFilm35(ctx, width, height, meta) {
+  adjustPixels(ctx, width, height, { contrast: 1.07, saturation: 0.88, warmth: 5, brightness: 0 });
+  drawNoise(ctx, width, height, 0.045);
+  const u = Math.min(width, height);
+  const edge = u * 0.072;
+  ctx.fillStyle = "rgba(8,8,8,.94)";
+  ctx.fillRect(0, 0, width, edge);
+  ctx.fillRect(0, height - edge, width, edge);
+  ctx.fillStyle = "rgba(246,226,176,.86)";
+  ctx.font = `600 ${u * 0.015}px ui-monospace, monospace`;
+  ctx.fillText(`PEDRO18  ·  35MM  ·  FRAME ${meta?.frameNumber || "18"}`, edge * 0.55, edge * 0.62);
+  const stamp = formatCapture(meta);
+  ctx.fillText(`26.12.2026  ·  GARÇA SP  ·  ${stamp.time}`, edge * 0.55, height - edge * 0.38);
+  const perforationW = u * 0.022;
+  const perforationH = u * 0.013;
+  ctx.fillStyle = "rgba(246,236,210,.88)";
+  const count = Math.max(6, Math.floor(width / (perforationW * 2.8)));
+  for (let i = 0; i < count; i++) {
+    const x = edge * 0.45 + i * ((width - edge * 0.9) / count);
+    ctx.fillRect(x, edge * 0.12, perforationW, perforationH);
+    ctx.fillRect(x, height - edge * 0.12 - perforationH, perforationW, perforationH);
+  }
+}
+
+function drawPostcard(ctx, width, height) {
+  adjustPixels(ctx, width, height, { contrast: 1.04, saturation: 0.94, warmth: 6, brightness: 2 });
+  drawVignette(ctx, width, height, 0.08);
+  const u = Math.min(width, height);
+  const pad = u * 0.05;
+  ctx.strokeStyle = "rgba(250,242,222,.82)";
+  ctx.lineWidth = Math.max(2, u * 0.002);
   ctx.strokeRect(pad, pad, width - pad * 2, height - pad * 2);
-  const y = height - pad - u * 0.1;
-  ctx.textAlign = "center";
-  ctx.fillStyle = "#f3dfb2";
-  ctx.font = `600 ${u * 0.045}px Georgia, serif`;
-  ctx.fillText("PEDRO XVIII", width / 2, y);
-  ctx.fillStyle = "rgba(243,223,178,.72)";
-  ctx.font = `600 ${u * 0.019}px system-ui, sans-serif`;
-  ctx.fillText("PRIMEIRA NOITE DOS 18  •  26 12 2026  •  GARÇA SP", width / 2, y + u * 0.043);
+  ctx.fillStyle = "rgba(4,14,27,.52)";
+  ctx.fillRect(pad, height - pad - u * 0.14, width - pad * 2, u * 0.14);
+  ctx.fillStyle = "#f7edd7";
+  ctx.font = `500 ${u * 0.05}px Georgia, serif`;
+  ctx.fillText("Garça", pad * 1.3, height - pad - u * 0.075);
+  ctx.fillStyle = "rgba(247,237,215,.72)";
+  ctx.font = `600 ${u * 0.018}px system-ui, sans-serif`;
+  ctx.fillText("26.12.2026 · PEDRO XVIII", pad * 1.3, height - pad - u * 0.035);
+  ctx.textAlign = "right";
+  ctx.font = `500 italic ${u * 0.017}px Georgia, serif`;
+  ctx.fillText("uma noite para lembrar", width - pad * 1.3, height - pad - u * 0.052);
   ctx.textAlign = "left";
 }
 
 function drawSimpleColor(ctx, width, height, kind) {
-  if (kind === "dourado") {
-    adjustPixels(ctx, width, height, { contrast: 1.04, saturation: 0.96, warmth: 12, brightness: -1 });
-    drawVignette(ctx, width, height, 0.09);
-  } else if (kind === "quente") {
-    adjustPixels(ctx, width, height, { contrast: 1.03, saturation: 1.05, warmth: 16, brightness: 2 });
-  } else if (kind === "frio") {
-    adjustPixels(ctx, width, height, { contrast: 1.04, saturation: 0.98, warmth: -15, brightness: -1 });
+  const presets = {
+    dourado: { contrast: 1.04, saturation: 0.96, warmth: 12, brightness: -1, vignette: 0.09 },
+    quente: { contrast: 1.03, saturation: 1.05, warmth: 16, brightness: 2 },
+    ambar: { contrast: 1.05, saturation: 1.04, warmth: 24, brightness: 1, vignette: 0.06 },
+    champagne: { contrast: 0.98, saturation: 0.86, warmth: 10, brightness: 8, vignette: 0.04 },
+    rose: { contrast: 1.02, saturation: 0.96, warmth: 10, brightness: 2, redLift: 5 },
+    frio: { contrast: 1.04, saturation: 0.98, warmth: -15, brightness: -1 },
+    "blue-hour": { contrast: 1.09, saturation: 0.82, warmth: -24, brightness: -4, vignette: 0.12 },
+    noturno: { contrast: 1.16, saturation: 0.78, warmth: -7, brightness: -10, vignette: 0.2 },
+  };
+  const preset = presets[kind];
+  if (!preset) return;
+  adjustPixels(ctx, width, height, preset);
+  if (preset.redLift) {
+    const veil = ctx.createLinearGradient(0, 0, width, height);
+    veil.addColorStop(0, `rgba(145,54,78,${preset.redLift / 100})`);
+    veil.addColorStop(1, "rgba(145,54,78,0)");
+    ctx.fillStyle = veil;
+    ctx.fillRect(0, 0, width, height);
   }
+  if (preset.vignette) drawVignette(ctx, width, height, preset.vignette);
 }
 
 function applyEffectDrawing(ctx, width, height, effectId, meta) {
   switch (effectId) {
     case "dourado": drawSimpleColor(ctx, width, height, "dourado"); break;
     case "quente": drawSimpleColor(ctx, width, height, "quente"); break;
+    case "ambar": drawSimpleColor(ctx, width, height, "ambar"); break;
+    case "champagne": drawSimpleColor(ctx, width, height, "champagne"); break;
+    case "rose": drawSimpleColor(ctx, width, height, "rose"); break;
     case "frio": drawSimpleColor(ctx, width, height, "frio"); break;
+    case "blue-hour": drawSimpleColor(ctx, width, height, "blue-hour"); break;
+    case "noturno": drawSimpleColor(ctx, width, height, "noturno"); break;
     case "arquivo18": drawArchive(ctx, width, height, meta); break;
     case "flagra": drawFlagra(ctx, width, height, meta); break;
     case "familia-nao": drawFamilyNo(ctx, width, height, meta); break;
@@ -519,6 +580,9 @@ function applyEffectDrawing(ctx, width, height, effectId, meta) {
     case "detector-historias": drawDetector(ctx, width, height, meta); break;
     case "descartavel18": drawDisposable(ctx, width, height, meta); break;
     case "primeira-noite": drawFirstNight(ctx, width, height, meta); break;
+    case "editorial2612": drawEditorial2612(ctx, width, height, meta); break;
+    case "filme35": drawFilm35(ctx, width, height, meta); break;
+    case "cartao-garca": drawPostcard(ctx, width, height, meta); break;
     default: break;
   }
 }

@@ -1,10 +1,10 @@
-# Testes — Filtros V1
+# Testes — Filtros V2
 
 Faça pelo menos um ciclo completo em Android e outro em iPhone antes de considerar esta fase pronta.
 
 ## 1. Migração e painel
 
-- execute `supabase/upgrade_final_to_filters_v1.sql` antes do novo deploy;
+- se a Filtros V1 já está funcionando, não execute SQL novo; se estiver vindo da versão FINAL, execute `supabase/upgrade_final_to_filters_v1.sql` uma única vez;
 - abra `/?admin=drive`;
 - confirme que **ATUALIZAR PAINEL** funciona;
 - confirme que o Google Drive contém `Originais`, `Prévias` e `Publicados`.
@@ -32,7 +32,12 @@ Publique pelo menos uma foto com cada efeito:
 - Original;
 - Dourado;
 - Quente;
+- Âmbar;
+- Champagne;
+- Rosé;
 - Frio;
+- Blue Hour;
+- Noturno;
 - Arquivo 18;
 - Flagra da Festa;
 - A família NÃO vai ver;
@@ -40,7 +45,10 @@ Publique pelo menos uma foto com cada efeito:
 - Raridade da Foto;
 - Detector de Histórias;
 - Câmera Descartável 18;
-- Primeira Noite dos 18.
+- Primeira Noite dos 18;
+- Editorial 26.12;
+- Filme 35;
+- Garça · 26.12.
 
 Confirme que molduras e textos aparecem também na foto final, não apenas na câmera ao vivo.
 
@@ -137,3 +145,13 @@ Também confirme que continuam funcionando:
 - painel administrativo;
 - OAuth/Drive já conectado;
 - limite de 12 funções da estrutura Hobby.
+
+
+## Testes específicos da V2
+
+- Ao ativar a câmera interna, confirmar que a câmera ocupa toda a área acima da navegação inferior e que a barra inferior continua utilizável.
+- Percorrer a lista até os últimos filtros, selecionar um deles e confirmar que a lista não volta para o início.
+- Em Raridade e Detector de Histórias, confirmar que o resultado aparece antes do clique e é o mesmo na foto gerada.
+- Conferir em tempo real Arquivo 18, Flagra, Confidencial, Memória, Descartável, Primeira Noite, Editorial, Filme 35 e Garça 26.12.
+- Testar Dourado, Quente, Âmbar, Champagne, Rosé, Frio, Blue Hour e Noturno nas câmeras frontal e traseira.
+- Repetir os testes em Android e iPhone, incluindo orientação vertical e retorno do app após bloquear/desbloquear a tela.

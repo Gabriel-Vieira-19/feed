@@ -1,33 +1,18 @@
-# Deploy fácil — Filtros V1
+# Deploy fácil — Filtros V2
 
 Este roteiro considera que a versão FINAL compatível com Vercel Hobby já está funcionando.
 
-## 1. Atualize o Supabase primeiro
+## 1. Supabase
 
-Abra:
+Se a versão **Filtros V1 já está funcionando**, não execute nenhum SQL novo para a V2.
 
-```text
-Supabase → SQL Editor → New query
-```
-
-Cole e execute somente:
+Se estiver vindo diretamente da versão FINAL sem filtros, execute uma única vez:
 
 ```text
 supabase/upgrade_final_to_filters_v1.sql
 ```
 
-A migração preserva os dados existentes e apenas acrescenta:
-
-```text
-published_drive_id
-published_name
-published_mime_type
-published_size_bytes
-effect_id
-effect_meta
-```
-
-**Não execute `schema.sql` novamente.**
+A V2 reutiliza as mesmas colunas de mídia e efeitos. **Não execute `schema.sql` novamente.**
 
 ## 2. Atualize o GitHub
 
@@ -84,7 +69,12 @@ Teste:
 Original
 Dourado
 Quente
+Âmbar
+Champagne
+Rosé
 Frio
+Blue Hour
+Noturno
 Arquivo 18
 Flagra da Festa
 A família NÃO vai ver
@@ -93,6 +83,9 @@ Raridade da Foto
 Detector de Histórias
 Câmera Descartável 18
 Primeira Noite dos 18
+Editorial 26.12
+Filme 35
+Garça · 26.12
 ```
 
 Depois siga o roteiro completo em `docs/TESTES.md`.
