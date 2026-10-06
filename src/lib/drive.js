@@ -1,19 +1,17 @@
 import { config } from "../config.js";
 import { getAccessToken } from "./supabase.js";
 import { fileStem, safeFilename, wait } from "./utils.js";
-import { effectUploadKey } from "./effects.js";
 
 const PREVIEW_TYPE = "image/jpeg";
 const UPLOAD_DRAFTS_KEY = "pedro_momentos_upload_drafts_v2";
 const UPLOAD_DRAFT_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
-function fileFingerprint(file, variantKey = "") {
+function fileFingerprint(file) {
   return [
     file.name || "foto",
     Number(file.size || 0),
     Number(file.lastModified || 0),
     file.type || "application/octet-stream",
-    String(variantKey || ""),
   ].join("|");
 }
 
@@ -42,8 +40,8 @@ function writeUploadDrafts(drafts) {
   }
 }
 
-function getOrCreateUploadGroupId(file, variantKey = "") {
-  const key = fileFingerprint(file, variantKey);
+function getOrCreateUploadGroupId(file) {
+  const key = fileFingerprint(file);
   const drafts = readUploadDrafts();
   const existing = drafts[key];
   if (existing?.uploadGroupId) {
@@ -63,8 +61,8 @@ function getOrCreateUploadGroupId(file, variantKey = "") {
   return uploadGroupId;
 }
 
-export function clearUploadRecovery(file, variantKey = "") {
-  const key = fileFingerprint(file, variantKey);
+export function clearUploadRecovery(file) {
+  const key = fileFingerprint(file);
   const drafts = readUploadDrafts();
   if (!(key in drafts)) return;
   delete drafts[key];
@@ -181,9 +179,7 @@ export async function createFeedPreview(file) {
 async function createUploadSession({ kind, file, uploadGroupId, displayName }) {
   const filename = kind === "preview"
     ? `${fileStem(file.name || "foto")}-preview.jpg`
-    : kind === "published"
-      ? `${fileStem(file.name || "foto")}-publicada.jpg`
-      : safeFilename(file.name || `foto-${Date.now()}.jpg`);
+    : safeFilename(file.name || `foto-${Date.now()}.jpg`);
 
   return apiFetch("/api/drive-upload-session", {
     method: "POST",
@@ -278,70 +274,46 @@ async function uploadOrReuse(session, file, onProgress) {
   return uploadFileResumable(session.sessionUrl, file, onProgress);
 }
 
-export async function uploadPhotoToDrive(file, displayName, onProgress, options = {}) {
-  const effectId = String(options.effectId || "original");
-  const effectMeta = options.effectMeta && typeof options.effectMeta === "object" ? options.effectMeta : {};
-  const publishedFile = options.publishedFile instanceof File ? options.publishedFile : null;
-  const variantKey = effectUploadKey(effectId, effectMeta);
-  const uploadGroupId = getOrCreateUploadGroupId(file, variantKey);
-  const feedSource = publishedFile || file;
+export async function uploadPhotoToDrive(file, displayName, onProgress) {
+  const uploadGroupId = getOrCreateUploadGroupId(file);
 
   onProgress?.({ label: "Preparando a prévia…", value: 0.03 });
-  const previewData = await createFeedPreview(feedSource);
+  const previewData = await createFeedPreview(file);
   const previewFile = new File(
     [previewData.blob],
-    `${fileStem(feedSource.name || "foto")}-preview.jpg`,
-    { type: PREVIEW_TYPE, lastModified: feedSource.lastModified || Date.now() },
+    `${fileStem(file.name || "foto")}-preview.jpg`,
+    { type: PREVIEW_TYPE, lastModified: file.lastModified || Date.now() },
   );
 
   onProgress?.({ label: "Verificando envio anterior…", value: 0.08 });
-  const sessionRequests = [
+  const [originalSession, previewSession] = await Promise.all([
     createUploadSession({ kind: "original", file, uploadGroupId, displayName }),
     createUploadSession({ kind: "preview", file: previewFile, uploadGroupId, displayName }),
-  ];
-  if (publishedFile) sessionRequests.push(createUploadSession({ kind: "published", file: publishedFile, uploadGroupId, displayName }));
-  const [originalSession, previewSession, publishedSession = null] = await Promise.all(sessionRequests);
+  ]);
 
-  const hasPublished = Boolean(publishedFile && publishedSession);
-  const originalEnd = hasPublished ? 0.48 : 0.72;
   onProgress?.({
     label: originalSession.alreadyUploaded ? "Foto original já enviada. Reaproveitando…" : "Enviando foto original…",
-    value: originalSession.alreadyUploaded ? originalEnd : 0.12,
+    value: originalSession.alreadyUploaded ? 0.74 : 0.12,
   });
   const original = await uploadOrReuse(originalSession, file, ratio => {
-    onProgress?.({ label: "Enviando foto original…", value: 0.12 + ratio * (originalEnd - 0.12) });
+    onProgress?.({ label: "Enviando foto original…", value: 0.12 + ratio * 0.62 });
   });
 
-  let published = null;
-  if (hasPublished) {
-    onProgress?.({
-      label: publishedSession.alreadyUploaded ? "Foto com efeito já enviada. Reaproveitando…" : "Enviando foto com efeito…",
-      value: publishedSession.alreadyUploaded ? 0.78 : 0.50,
-    });
-    published = await uploadOrReuse(publishedSession, publishedFile, ratio => {
-      onProgress?.({ label: "Enviando foto com efeito…", value: 0.50 + ratio * 0.28 });
-    });
-  }
-
-  const previewStart = hasPublished ? 0.80 : 0.74;
   onProgress?.({
     label: previewSession.alreadyUploaded ? "Prévia já enviada. Reaproveitando…" : "Enviando prévia…",
-    value: previewSession.alreadyUploaded ? 0.92 : previewStart,
+    value: previewSession.alreadyUploaded ? 0.92 : 0.76,
   });
   const preview = await uploadOrReuse(previewSession, previewFile, ratio => {
-    onProgress?.({ label: "Enviando prévia…", value: previewStart + ratio * (0.92 - previewStart) });
+    onProgress?.({ label: "Enviando prévia…", value: 0.76 + ratio * 0.16 });
   });
 
   onProgress?.({ label: "Publicando no feed…", value: 0.94 });
-  const publishedResult = await apiFetch("/api/photo-publish", {
+  const published = await apiFetch("/api/photo-publish", {
     method: "POST",
     body: JSON.stringify({
       uploadGroupId,
       originalFileId: original.id,
       previewFileId: preview.id,
-      publishedFileId: published?.id || null,
-      effectId,
-      effectMeta,
       width: previewData.width,
       height: previewData.height,
     }),
@@ -349,9 +321,8 @@ export async function uploadPhotoToDrive(file, displayName, onProgress, options 
 
   onProgress?.({ label: "Publicado!", value: 1 });
   return {
-    ...publishedResult.photo,
-    preview_url: `/api/media?photo=${encodeURIComponent(publishedResult.photo.id)}`,
-    uploadVariantKey: variantKey,
+    ...published.photo,
+    preview_url: `/api/media?photo=${encodeURIComponent(published.photo.id)}`,
   };
 }
 
@@ -362,20 +333,18 @@ function extensionFromMime(mimeType) {
   return "jpg";
 }
 
-export async function downloadPhoto(photo, variant = "published", onProgress) {
-  if (!photo?.id) throw new Error("Dados da foto indisponíveis.");
-  const wantsPublished = variant === "published" && photo.published_drive_id && Number(photo.published_size_bytes || 0) > 0;
-  const total = wantsPublished ? Number(photo.published_size_bytes) : Number(photo.size_bytes);
+export async function downloadOriginalPhoto(photo, onProgress) {
+  if (!photo?.id || !photo?.size_bytes) throw new Error("Dados da foto original indisponíveis.");
+  const total = Number(photo.size_bytes);
   if (!Number.isFinite(total) || total <= 0 || total > config.maxPhotoBytes) throw new Error("Tamanho da foto inválido.");
 
   const token = await getAccessToken();
   const chunks = [];
   let offset = 0;
-  const serverVariant = wantsPublished ? "published" : "original";
 
   while (offset < total) {
     const end = Math.min(total - 1, offset + config.downloadChunkBytes - 1);
-    const response = await fetch(`/api/original-chunk?photo=${encodeURIComponent(photo.id)}&variant=${serverVariant}&start=${offset}&end=${end}`, {
+    const response = await fetch(`/api/original-chunk?photo=${encodeURIComponent(photo.id)}&start=${offset}&end=${end}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!response.ok) {
@@ -389,21 +358,12 @@ export async function downloadPhoto(photo, variant = "published", onProgress) {
     onProgress?.(Math.min(1, offset / total));
   }
 
-  const mimeType = wantsPublished
-    ? (photo.published_mime_type || "image/jpeg")
-    : (photo.mime_type || chunks[0]?.type || "image/jpeg");
+  const mimeType = photo.mime_type || chunks[0]?.type || "image/jpeg";
   const finalBlob = new Blob(chunks, { type: mimeType });
-  const sourceName = wantsPublished ? photo.published_name : photo.original_name;
-  const base = String(sourceName || `pedro-momentos-${photo.id.slice(0, 8)}`)
+  const base = String(photo.original_name || `pedro-momentos-${photo.id.slice(0, 8)}`)
     .replace(/\.[^.]+$/, "")
     .replace(/[^a-zA-Z0-9-_ ]+/g, "-")
     .trim() || `pedro-momentos-${photo.id.slice(0, 8)}`;
-  const suffix = wantsPublished ? "-publicada" : "-original";
-  const filename = `${base}${suffix}.${extensionFromMime(mimeType)}`;
-  return { blob: finalBlob, filename, variant: serverVariant };
+  const filename = `${base}.${extensionFromMime(mimeType)}`;
+  return { blob: finalBlob, filename };
 }
-
-export async function downloadOriginalPhoto(photo, onProgress) {
-  return downloadPhoto(photo, "original", onProgress);
-}
-

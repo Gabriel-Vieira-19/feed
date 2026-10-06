@@ -63,15 +63,10 @@ const required = [
   "api/cleanup-abandoned.js",
   "supabase/schema.sql",
   "src/lib/drive.js",
-  "src/lib/effects.js",
   "src/lib/pending-upload.js",
   "supabase/upgrade_v2_2_to_final.sql",
-  "supabase/upgrade_final_to_filters_v1.sql",
 ];
 for (const item of required) if (!fs.existsSync(path.join(root, item))) errors.push(`Arquivo obrigatório ausente: ${item}`);
-
-const apiFunctionCount = files.filter(file => file.startsWith(path.join(root, "api") + path.sep) && file.endsWith(".js")).length;
-if (apiFunctionCount > 12) errors.push(`Vercel Hobby: ${apiFunctionCount} funções em api/; o projeto deve manter no máximo 12.`);
 
 const css = fs.readFileSync(path.join(root, "src/styles.css"), "utf8");
 let depth = 0;

@@ -89,7 +89,7 @@ export async function fetchFeed({ offset = 0, limit = config.feedPageSize, userI
   const supabase = getSupabase();
   let query = supabase
     .from("photos")
-    .select("id,user_id,display_name,original_name,mime_type,size_bytes,published_drive_id,published_name,published_mime_type,published_size_bytes,effect_id,effect_meta,width,height,likes_count,created_at")
+    .select("id,user_id,display_name,original_name,mime_type,size_bytes,width,height,likes_count,created_at")
     .eq("published", true);
 
   if (userId) query = query.eq("user_id", userId);

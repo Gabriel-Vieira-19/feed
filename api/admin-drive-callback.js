@@ -1,4 +1,4 @@
-import { connectDriveWithCode, getAppUrl, verifyOAuthState } from "../server/google-drive.js";
+import { connectDriveWithCode, getAppUrl, verifyOAuthState } from "./_lib/google-drive.js";
 
 export default async function handler(req, res) {
   const code = String(req.query?.code || "");

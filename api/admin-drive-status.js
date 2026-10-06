@@ -1,5 +1,5 @@
-import { getDriveStatus } from "../server/google-drive.js";
-import { handleError, json, methodNotAllowed, requireAdmin } from "../server/http.js";
+import { getDriveStatus } from "./_lib/google-drive.js";
+import { handleError, json, methodNotAllowed, requireAdmin } from "./_lib/http.js";
 
 export default async function handler(req, res) {
   if (req.method !== "GET") return methodNotAllowed(res, ["GET"]);

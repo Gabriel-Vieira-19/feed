@@ -1,5 +1,5 @@
-import { handleError, json, methodNotAllowed } from "../server/http.js";
-import { requireUser } from "../server/supabase-admin.js";
+import { handleError, json, methodNotAllowed } from "./_lib/http.js";
+import { requireUser } from "./_lib/supabase-admin.js";
 
 const MAX_CHUNK_BYTES = 3 * 1024 * 1024 + 64 * 1024;
 

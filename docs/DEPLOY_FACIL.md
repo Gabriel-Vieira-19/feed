@@ -1,49 +1,55 @@
-# Deploy fácil — Filtros V3
+# Deploy fácil — versão final
 
-Este roteiro considera que a versão FINAL compatível com Vercel Hobby já está funcionando.
+Se você já está com a v2.2 funcionando, a atualização é pequena. Não precisa recriar Supabase, Google Cloud ou Drive.
 
-## 1. Supabase
+---
 
-Se a versão **Filtros V1 ou V2 já está funcionando**, não execute nenhum SQL novo para a V3.
+## CASO A — você já está usando a v2.2
 
-Se estiver vindo diretamente da versão FINAL sem filtros, execute uma única vez:
+### 1. Supabase
 
-```text
-supabase/upgrade_final_to_filters_v1.sql
-```
-
-A V3 reutiliza as mesmas colunas de mídia e efeitos. **Não execute `schema.sql` novamente.**
-
-## 2. Atualize o GitHub
-
-Substitua o conteúdo atual do repositório pelo conteúdo desta versão.
-
-Confirme que a raiz contém diretamente:
+Abra o SQL Editor e execute somente:
 
 ```text
-api/
-server/
-src/
-supabase/
-package.json
-vercel.json
+supabase/upgrade_v2_2_to_final.sql
 ```
 
-A pasta `api/` deve continuar com exatamente 12 arquivos `.js`.
+Isso preserva fotos, usuários e curtidas.
 
-Faça o commit/push.
+### 2. Vercel
 
-## 3. Aguarde a Vercel
+Adicione uma nova variável privada:
 
-A Vercel deve fazer o deployment automaticamente.
+```text
+CRON_SECRET
+```
 
-Não há nenhuma variável de ambiente nova para os filtros.
+Use uma senha aleatória longa, diferente da `ADMIN_KEY`.
 
-Quando aparecer `Ready`, abra o aplicativo com `Ctrl + F5` ou numa aba anônima para evitar cache antigo.
+As variáveis finais ficam:
 
-## 4. Abra o painel administrativo
+```text
+VITE_SUPABASE_URL
+VITE_SUPABASE_PUBLISHABLE_KEY
+VITE_EVENT_TITLE
+VITE_EVENT_SUBTITLE
+SUPABASE_SERVICE_ROLE_KEY
+GOOGLE_CLIENT_ID
+GOOGLE_CLIENT_SECRET
+APP_URL
+ADMIN_KEY
+CRON_SECRET
+```
 
-Acesse:
+### 3. GitHub
+
+Substitua o código atual por esta versão e faça um commit.
+
+A Vercel fará o deploy automaticamente.
+
+### 4. Painel administrativo
+
+Abra:
 
 ```text
 SUA_APP_URL/?admin=drive
@@ -51,55 +57,112 @@ SUA_APP_URL/?admin=drive
 
 Informe a `ADMIN_KEY` e clique em **ATUALIZAR PAINEL**.
 
-Nesse momento o backend também garante que exista a nova pasta:
+Depois clique uma vez em:
 
 ```text
-Pedro Momentos/Publicados
+PRIVATIZAR ORIGINAIS ANTIGOS
 ```
 
-Não é necessário desconectar ou recriar a integração do Google Drive.
+Isso remove eventuais permissões públicas criadas pelas versões de teste.
 
-## 5. Teste a câmera
+### 5. Google OAuth
 
-Entre normalmente no aplicativo e abra **Câmera**.
-
-Teste:
+Antes da festa:
 
 ```text
-Original
-Dourado
-Quente
-Âmbar
-Champagne
-Rosé
-Frio
-Blue Hour
-Noturno
-Arquivo 18
-Flagra da Festa
-A família NÃO vai ver
-Memória Desbloqueada
-Raridade da Foto
-Detector de Histórias
-Câmera Descartável 18
-Primeira Noite dos 18
-Editorial 26.12
-Filme 35
-Garça · 26.12
+Google Cloud
+→ Google Auth Platform
+→ Audience / Público-alvo
+→ Publishing status
+→ In production / Em produção
 ```
 
-Depois siga o roteiro completo em `docs/TESTES.md`.
+Depois volte ao painel do aplicativo e use **CONECTAR / RECONECTAR DRIVE**.
 
 ---
 
-## Instalação nova
+## CASO B — instalação nova
 
-Para uma instalação do zero:
+### ETAPA 1 — Supabase
 
-1. ative Anonymous Sign-Ins no Supabase;
-2. execute `supabase/schema.sql`;
-3. configure as variáveis existentes da Vercel;
-4. configure Google Drive API/OAuth;
-5. conecte o Drive por `/?admin=drive`.
+1. Crie um projeto.
+2. Ative `Authentication → Providers → Anonymous Sign-Ins`.
+3. Abra `SQL Editor`.
+4. Execute `supabase/schema.sql`.
+5. Copie:
+   - Project URL;
+   - Publishable Key;
+   - Secret / Service Role Key.
 
-A instalação nova já cria o esquema com suporte a filtros, portanto não execute os arquivos de upgrade.
+### ETAPA 2 — GitHub + Vercel
+
+1. Crie um repositório.
+2. Envie todos os arquivos.
+3. Importe o repositório na Vercel.
+4. Configure inicialmente:
+
+```text
+VITE_SUPABASE_URL
+VITE_SUPABASE_PUBLISHABLE_KEY
+VITE_EVENT_TITLE=PEDRO 18
+VITE_EVENT_SUBTITLE=Momentos da festa
+```
+
+5. Faça o primeiro deploy e guarde a URL.
+
+### ETAPA 3 — Google Cloud
+
+1. Crie um projeto.
+2. Ative a **Google Drive API**.
+3. Configure a tela OAuth.
+4. Crie `OAuth Client ID → Web application`.
+5. Em `Authorized redirect URIs`, coloque exatamente:
+
+```text
+SUA_APP_URL/api/admin-drive-callback
+```
+
+6. Copie `Client ID` e `Client Secret`.
+
+### ETAPA 4 — variáveis privadas
+
+Na Vercel, adicione:
+
+```text
+SUPABASE_SERVICE_ROLE_KEY
+GOOGLE_CLIENT_ID
+GOOGLE_CLIENT_SECRET
+APP_URL
+ADMIN_KEY
+CRON_SECRET
+```
+
+Depois faça um redeploy.
+
+### ETAPA 5 — conectar Drive
+
+Abra:
+
+```text
+SUA_APP_URL/?admin=drive
+```
+
+Informe a `ADMIN_KEY`, conecte a conta Google e atualize o painel.
+
+O aplicativo cria:
+
+```text
+Pedro Momentos/
+├── Originais/
+└── Prévias/
+```
+
+### ETAPA 6 — produção do OAuth
+
+Durante desenvolvimento, você pode manter o OAuth em Testing.
+
+Antes da festa, altere para **Em produção** e reconecte a conta. Em modo de teste, refresh tokens podem expirar em cerca de 7 dias; em produção eles normalmente permanecem válidos até revogação ou longo período de inatividade.
+
+### ETAPA 7 — testes
+
+Siga `docs/TESTES.md`.

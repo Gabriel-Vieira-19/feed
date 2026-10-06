@@ -1,93 +1,158 @@
-# Pedro 18 — Momentos / Filtros V3
+# Pedro 18 — Momentos
 
-Aplicativo web de fotos da festa usando **Google Drive** para arquivos, **Supabase** para usuários/feed/curtidas e **Vercel** para frontend + API.
+Aplicativo web de fotos para a festa. Esta versão final usa **Google Drive para os arquivos**, **Supabase para usuários/feed/curtidas** e **Vercel para o site + rotas de API**.
 
-## Novidades da V3
+## O que o convidado vê
 
-- capas dos filtros redesenhadas novamente: cada efeito mostra **nome + explicação curta + miniatura que representa o resultado**;
-- novos filtros de temperatura: **Mel, Tungstênio, Gelo e Crepúsculo**, além dos já existentes;
-- **Flagra da Festa** ganhou óculos pixelados estilo *thug life*, flash e tentativa de acompanhar o maior rosto detectado na câmera;
-- o Flagra também grava os óculos na foto publicada; quando a API nativa de detecção facial não existir, usa uma posição central de fallback;
-- **Raridade da Foto** agora transforma a foto em uma carta: raridade Comum/Rara/Épica/Lendária, custo de elixir aleatório e moldura própria;
-- a **Lendária** usa formato hexagonal e aura multicolorida animada;
-- o custo de elixir é sorteado de **1 a 9** e não depende da raridade;
-- Arquivo 18, Flagra, Confidencial, Memória, Raridade, Detector, Descartável e Primeira Noite agora têm movimento ao vivo;
-- no feed e no modal, esses efeitos continuam animados sobre o JPEG publicado, dando sensação de GIF sem transformar todas as fotos em arquivos GIF pesados;
-- a lista horizontal continua preservando a posição ao trocar filtros.
+- entra apenas com um nome;
+- abre a câmera normal do celular;
+- tira uma foto nova durante a festa;
+- vê a prévia e publica no feed;
+- curte fotos;
+- ordena o feed por mais recentes, mais antigas, mais curtidas, menos curtidas, usuários A–Z e usuários Z–A;
+- vê suas próprias publicações em **Meus cliques**;
+- baixa a foto original **somente em Meus cliques**.
 
-**Quem já executou `upgrade_final_to_filters_v1.sql` não precisa executar SQL adicional para a V3.**
+Não há galeria para publicação, filtros, comentários nem legenda editável. O texto “Publicado por …” é automático.
 
-## Efeitos de temperatura
-
-Original, Dourado, Quente, Âmbar, Champagne, Rosé, Mel, Tungstênio, Frio, Gelo, Blue Hour, Crepúsculo e Noturno.
-
-## Molduras e efeitos próprios da festa
-
-Arquivo 18, Flagra da Festa, A família NÃO vai ver, Memória Desbloqueada, Raridade da Foto, Detector de Histórias, Câmera Descartável 18, Primeira Noite dos 18, Editorial 26.12, Filme 35 e Garça · 26.12.
-
-## Raridade da Foto
-
-A raridade é sorteada antes da captura e permanece na publicação:
-
-- Comum;
-- Rara;
-- Épica;
-- Lendária.
-
-O elixir é sorteado separadamente. A Lendária usa moldura hexagonal com brilho multicolorido em movimento. A implementação reproduz a leitura visual das cartas de batalha diretamente com CSS/Canvas; não depende de imagens externas durante a festa.
-
-## Flagra da Festa
-
-Na câmera interna, o app tenta usar a API `FaceDetector` do navegador para posicionar os óculos no maior rosto detectado. Se o aparelho não oferecer essa API ou a detecção falhar, o filtro continua funcionando com os óculos centralizados. O JPEG final também tenta detectar o rosto antes de renderizar os óculos.
-
-Isso deve ser testado principalmente em Android/Chrome e iPhone/Safari, pois o suporte à detecção facial nativa varia entre navegadores.
-
-## Movimento nas publicações
-
-A foto salva no Drive continua sendo um JPEG. O movimento é renderizado no navegador como uma camada leve sobre a foto do feed/modal:
-
-- Arquivo 18: scanner;
-- Flagra: flash periódico;
-- Confidencial: carimbo/tarja;
-- Memória: aviso de memória desbloqueada;
-- Raridade: aura da raridade;
-- Detector: linha de varredura;
-- Descartável: vazamento de luz e grão;
-- Primeira Noite: brilhos discretos.
-
-Assim preservamos tamanho de arquivo baixo e não precisamos converter todas as fotos para GIF/vídeo.
-
-## Original preservado + versão publicada
+## Como as fotos são guardadas
 
 ```text
 CELULAR
   │
-  ├─ original privado ─────────→ Google Drive / Originais
-  ├─ foto com efeito ──────────→ Google Drive / Publicados
-  └─ prévia leve ──────────────→ Google Drive / Prévias
+  ├─ original ───────────────→ Google Drive / Originais
+  │
+  └─ prévia de até 2 MB ────→ Google Drive / Prévias
+                                  │
+                                  ↓
+                              feed do site
+
+Supabase guarda somente os dados:
+nome, ID da foto, curtidas, horário, IDs do Drive etc.
 ```
 
-O original não recebe filtro. A versão publicada com efeito é um JPEG separado. Em **Meus cliques**, o dono continua podendo baixar a versão publicada e, quando disponível, o original.
+A foto original **não é redimensionada nem recomprimida**. A prévia é um segundo arquivo leve, criado apenas para o feed.
 
-## Atualização a partir da V2
+## Privacidade dos originais
 
-1. Substitua o código do GitHub pelo conteúdo desta V3.
-2. Aguarde o deploy da Vercel.
-3. Não execute `schema.sql` novamente.
-4. Não há nova variável de ambiente.
-5. Faça os testes de `docs/TESTES.md`.
+Os originais ficam privados no Google Drive. O aplicativo não cria mais permissão “qualquer pessoa com o link”.
 
-## Vercel Hobby
+O download é feito em blocos privados de até 3 MB e o backend verifica se a foto pertence ao usuário atual. Por isso o botão de download só existe em **Meus cliques** e a própria API também bloqueia downloads de fotos de outras pessoas.
 
-`api/` continua com exatamente **12 Serverless Functions**. Os módulos compartilhados permanecem em `server/`.
+Se você já usou uma versão antiga que tornou originais públicos, abra `/?admin=drive` e use **PRIVATIZAR ORIGINAIS ANTIGOS** uma vez.
 
-## Ainda não incluído
+## Proteção contra duplicação e falhas
 
-- colagem;
-- boomerang;
-- rastreamento facial por biblioteca própria/MediaPipe para aparelhos sem `FaceDetector`;
-- fotos/recortes do Pedro;
-- efeitos com IA.
+- vários toques rápidos em publicar não iniciam uploads paralelos;
+- o mesmo arquivo mantém um `upload_group_id` até a publicação terminar;
+- se original ou prévia já chegaram ao Drive, uma nova tentativa os reaproveita;
+- se a página for recarregada, a foto pendente pode ser restaurada do armazenamento local do navegador;
+- o backend continua idempotente: uma publicação já concluída não é criada novamente.
+
+## Limpeza automática
+
+Uploads que chegaram ao Drive, mas nunca viraram uma publicação, são considerados abandonados após 8 horas.
+
+Existe:
+
+- botão manual no painel administrativo;
+- Vercel Cron diário em `/api/cleanup-abandoned`.
+
+Para o Cron funcionar, configure `CRON_SECRET` na Vercel.
+
+## Painel administrativo
+
+Abra:
+
+```text
+SUA_URL/?admin=drive
+```
+
+Com a `ADMIN_KEY`, o painel permite:
+
+- conectar/reconectar o Drive;
+- visualizar total de fotos, usuários, curtidas, fotos ocultas e armazenamento usado;
+- ocultar e restaurar publicações;
+- excluir uma publicação do Supabase e os dois arquivos do Drive;
+- limpar uploads abandonados;
+- privatizar originais criados por versões antigas;
+- gerar e baixar um QR Code do aplicativo.
+
+## OAuth antes da festa
+
+Durante desenvolvimento o Google OAuth pode ficar em modo **Testing**. Antes da festa, altere a tela de consentimento para **In production / Em produção** e reconecte o Drive. O modo de teste pode gerar refresh tokens com validade limitada.
+
+## Atualizando a versão 2.2 já instalada
+
+Se você já tem o Supabase funcionando com a v2.2, **não rode `schema.sql` de novo**.
+
+Execute apenas:
+
+```text
+supabase/upgrade_v2_2_to_final.sql
+```
+
+Depois atualize o GitHub/Vercel e adicione a nova variável privada:
+
+```text
+CRON_SECRET
+```
+
+Por fim, abra `/?admin=drive` e clique em **PRIVATIZAR ORIGINAIS ANTIGOS**.
+
+## Implantação
+
+Siga `docs/DEPLOY_FACIL.md`.
+
+Resumo:
+
+1. Supabase;
+2. GitHub + Vercel;
+3. Google Drive API + OAuth;
+4. variáveis privadas na Vercel;
+5. conectar a conta Google;
+6. colocar o OAuth em produção antes da festa;
+7. executar `docs/TESTES.md`.
+
+## Estrutura principal
+
+```text
+pedro-momentos-google-drive-final/
+├── api/
+│   ├── _lib/
+│   ├── admin-dashboard.js
+│   ├── admin-drive-auth.js
+│   ├── admin-drive-callback.js
+│   ├── admin-drive-status.js
+│   ├── admin-photo-action.js
+│   ├── admin-private-originals.js
+│   ├── cleanup-abandoned.js
+│   ├── drive-upload-proxy.js
+│   ├── drive-upload-session.js
+│   ├── health.js
+│   ├── media.js
+│   ├── original-chunk.js
+│   └── photo-publish.js
+├── docs/
+├── public/
+├── scripts/
+├── src/
+│   ├── lib/
+│   │   ├── drive.js
+│   │   ├── pending-upload.js
+│   │   ├── supabase.js
+│   │   └── utils.js
+│   ├── config.js
+│   ├── main.js
+│   └── styles.css
+├── supabase/
+│   ├── schema.sql
+│   └── upgrade_v2_2_to_final.sql
+├── .env.example
+├── index.html
+├── package.json
+└── vercel.json
+```
 
 ## Verificação local
 
@@ -96,3 +161,15 @@ npm install
 npm run check
 npm run build
 ```
+
+## Proteção visual contra screenshots
+
+Esta edição adiciona uma camada de proteção no frontend:
+
+- cobre imediatamente o conteúdo quando a aba/janela perde foco ou fica oculta;
+- reage a `PrintScreen` quando o navegador recebe o evento;
+- bloqueia impressão por `Ctrl/Cmd + P` e via CSS de impressão;
+- desabilita menu de contexto e arraste diretamente sobre fotos, vídeos e canvas;
+- exibe uma marca d'água discreta com o nome local do convidado.
+
+Limitação do navegador: não existe API web capaz de impedir 100% capturas feitas pelo sistema operacional, botões físicos do celular, extensões ou outro dispositivo. A proteção reduz capturas casuais e mantém identificação visual no conteúdo.

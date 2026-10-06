@@ -43,34 +43,14 @@ async function withStore(mode, callback) {
   }
 }
 
-function fileRecord(file) {
-  if (!file) return null;
-  return {
-    blob: file,
-    name: file.name || `foto-${Date.now()}.jpg`,
-    type: file.type || "image/jpeg",
-    lastModified: Number(file.lastModified || Date.now()),
-  };
-}
-
-function restoreFile(record, fallbackName = "foto.jpg") {
-  if (!record?.blob) return null;
-  return new File([record.blob], record.name || fallbackName, {
-    type: record.type || record.blob.type || "image/jpeg",
-    lastModified: Number(record.lastModified || Date.now()),
-  });
-}
-
-export async function savePendingCapture(capture) {
-  const originalFile = capture instanceof File ? capture : capture?.originalFile;
-  if (!originalFile) return false;
+export async function savePendingCapture(file) {
+  if (!file) return false;
   try {
     await withStore("readwrite", store => store.put({
-      version: 2,
-      original: fileRecord(originalFile),
-      published: fileRecord(capture?.publishedFile || null),
-      effectId: String(capture?.effectId || "original"),
-      effectMeta: capture?.effectMeta && typeof capture.effectMeta === "object" ? capture.effectMeta : {},
+      blob: file,
+      name: file.name || `foto-${Date.now()}.jpg`,
+      type: file.type || "image/jpeg",
+      lastModified: Number(file.lastModified || Date.now()),
       savedAt: Date.now(),
     }, RECORD_KEY));
     return true;
@@ -82,26 +62,15 @@ export async function savePendingCapture(capture) {
 export async function loadPendingCapture() {
   try {
     const record = await withStore("readonly", store => store.get(RECORD_KEY));
-    if (!record?.savedAt) return null;
+    if (!record?.blob || !record?.savedAt) return null;
     if (Date.now() - Number(record.savedAt) > MAX_AGE_MS) {
       await clearPendingCapture();
       return null;
     }
-
-    // Compatibilidade com a versão anterior, que salvava apenas um blob na raiz.
-    if (record.blob) {
-      const originalFile = restoreFile(record, "foto.jpg");
-      return originalFile ? { originalFile, publishedFile: null, effectId: "original", effectMeta: {} } : null;
-    }
-
-    const originalFile = restoreFile(record.original, "foto.jpg");
-    if (!originalFile) return null;
-    return {
-      originalFile,
-      publishedFile: restoreFile(record.published, "foto-editada.jpg"),
-      effectId: String(record.effectId || "original"),
-      effectMeta: record.effectMeta && typeof record.effectMeta === "object" ? record.effectMeta : {},
-    };
+    return new File([record.blob], record.name || "foto.jpg", {
+      type: record.type || record.blob.type || "image/jpeg",
+      lastModified: Number(record.lastModified || record.savedAt),
+    });
   } catch {
     return null;
   }
