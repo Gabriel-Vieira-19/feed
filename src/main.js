@@ -23,9 +23,169 @@ import {
   formatRelativeTime,
   normalizeName,
 } from "./lib/utils.js";
-import { initializeScreenshotProtection, setScreenshotWatermarkName } from "./lib/screenshot-protection.js";
 
 const app = document.querySelector("#app");
+
+
+/* =========================================================
+   PROTEÇÃO CONTRA CAPTURAS CASUAIS — FRONTEND APENAS
+   Não cria nenhuma função serverless na Vercel.
+========================================================= */
+
+const CAPTURE_SHIELD_ID = "capture-protection-shield";
+const CAPTURE_WATERMARK_ID = "capture-protection-watermark";
+
+let captureViewerName = "Convidado";
+let captureEventLabel = "PEDRO 18";
+let captureHideTimer = null;
+let captureProtectionInitialized = false;
+
+function cleanCaptureLabel(value, fallback) {
+  const text = String(value || "").replace(/\s+/g, " ").trim();
+  return text || fallback;
+}
+
+function getCaptureShield() {
+  return document.getElementById(CAPTURE_SHIELD_ID);
+}
+
+function getCaptureWatermark() {
+  return document.getElementById(CAPTURE_WATERMARK_ID);
+}
+
+function renderCaptureWatermark() {
+  const root = getCaptureWatermark();
+  if (!root) return;
+
+  const label = `${captureEventLabel} • ${captureViewerName}`;
+  root.setAttribute("aria-label", `Marca d'água: ${label}`);
+  root.innerHTML = Array.from({ length: 18 }, () => (
+    `<span aria-hidden="true">${escapeHtml(label)}</span>`
+  )).join("");
+}
+
+function showCaptureShield(reason = "protected") {
+  window.clearTimeout(captureHideTimer);
+
+  const shield = getCaptureShield();
+  if (!shield) return;
+
+  shield.dataset.reason = reason;
+  shield.classList.add("is-visible");
+  document.documentElement.classList.add("capture-protection-active");
+}
+
+function hideCaptureShield(delay = 120) {
+  window.clearTimeout(captureHideTimer);
+
+  captureHideTimer = window.setTimeout(() => {
+    const shield = getCaptureShield();
+    if (!shield) return;
+
+    shield.classList.remove("is-visible");
+    document.documentElement.classList.remove("capture-protection-active");
+  }, delay);
+}
+
+function flashCaptureShield(reason = "capture") {
+  showCaptureShield(reason);
+  hideCaptureShield(1100);
+}
+
+function ensureCaptureProtectionUi() {
+  if (!document.body) return;
+
+  if (!getCaptureWatermark()) {
+    const watermark = document.createElement("div");
+    watermark.id = CAPTURE_WATERMARK_ID;
+    watermark.className = "capture-protection-watermark";
+    watermark.setAttribute("aria-hidden", "true");
+    document.body.appendChild(watermark);
+  }
+
+  if (!getCaptureShield()) {
+    const shield = document.createElement("div");
+    shield.id = CAPTURE_SHIELD_ID;
+    shield.className = "capture-protection-shield";
+    shield.setAttribute("aria-hidden", "true");
+    shield.innerHTML = `
+      <div class="capture-protection-card">
+        <strong>Conteúdo protegido</strong>
+        <span>Volte para a página para continuar.</span>
+      </div>`;
+    document.body.appendChild(shield);
+  }
+
+  renderCaptureWatermark();
+}
+
+function setScreenshotWatermarkName(name) {
+  captureViewerName = cleanCaptureLabel(name, "Convidado");
+  renderCaptureWatermark();
+}
+
+function initializeScreenshotProtection(options = {}) {
+  captureViewerName = cleanCaptureLabel(options.viewerName, captureViewerName);
+  captureEventLabel = cleanCaptureLabel(options.eventLabel, captureEventLabel);
+
+  if (captureProtectionInitialized) {
+    renderCaptureWatermark();
+    return;
+  }
+
+  captureProtectionInitialized = true;
+  ensureCaptureProtectionUi();
+
+  window.addEventListener("blur", () => showCaptureShield("blur"), true);
+  window.addEventListener("focus", () => hideCaptureShield(), true);
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+      showCaptureShield("visibility");
+    } else if (document.hasFocus()) {
+      hideCaptureShield();
+    }
+  }, true);
+
+  document.addEventListener("keydown", event => {
+    const key = String(event.key || "").toLowerCase();
+
+    if (event.key === "PrintScreen") {
+      flashCaptureShield("printscreen");
+      return;
+    }
+
+    if ((event.ctrlKey || event.metaKey) && key === "p") {
+      event.preventDefault();
+      flashCaptureShield("print");
+    }
+  }, true);
+
+  document.addEventListener("keyup", event => {
+    if (event.key === "PrintScreen") {
+      flashCaptureShield("printscreen");
+    }
+  }, true);
+
+  document.addEventListener("contextmenu", event => {
+    if (event.target.closest("img, video, canvas, .photo-card, .photo-modal")) {
+      event.preventDefault();
+    }
+  });
+
+  document.addEventListener("dragstart", event => {
+    if (event.target.closest("img, video, canvas")) {
+      event.preventDefault();
+    }
+  });
+
+  window.addEventListener("beforeprint", () => showCaptureShield("print"), true);
+  window.addEventListener("afterprint", () => hideCaptureShield(), true);
+
+  if (document.hidden || !document.hasFocus()) {
+    showCaptureShield("initial");
+  }
+}
 
 const icons = {
   feed: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M7 8h10M7 12h10M7 16h6"/></svg>`,

@@ -161,15 +161,3 @@ npm install
 npm run check
 npm run build
 ```
-
-## Proteção visual contra screenshots
-
-Esta edição adiciona uma camada de proteção no frontend:
-
-- cobre imediatamente o conteúdo quando a aba/janela perde foco ou fica oculta;
-- reage a `PrintScreen` quando o navegador recebe o evento;
-- bloqueia impressão por `Ctrl/Cmd + P` e via CSS de impressão;
-- desabilita menu de contexto e arraste diretamente sobre fotos, vídeos e canvas;
-- exibe uma marca d'água discreta com o nome local do convidado.
-
-Limitação do navegador: não existe API web capaz de impedir 100% capturas feitas pelo sistema operacional, botões físicos do celular, extensões ou outro dispositivo. A proteção reduz capturas casuais e mantém identificação visual no conteúdo.

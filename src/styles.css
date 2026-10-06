@@ -335,11 +335,9 @@ a { color: inherit; }
   .admin-photo-actions { grid-column:1 / -1; grid-template-columns:1fr 1fr; }
 }
 
+
 /* =========================================================
-   PROTEÇÃO CONTRA CAPTURAS CASUAIS
-   Observação: navegadores não conseguem bloquear 100% capturas
-   feitas pelo sistema operacional. Esta camada oculta a interface
-   quando a página perde foco e adiciona identificação visual.
+   PROTEÇÃO CONTRA CAPTURAS CASUAIS — FRONTEND APENAS
 ========================================================= */
 
 .capture-protection-watermark {
