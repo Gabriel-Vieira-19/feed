@@ -1,6 +1,6 @@
-import { createResumableSession, ensureDriveFolders, findCompletedUploadFile, getDriveAccessToken } from "./_lib/google-drive.js";
-import { handleError, json, methodNotAllowed, readJson } from "./_lib/http.js";
-import { requireUser } from "./_lib/supabase-admin.js";
+import { createResumableSession, ensureDriveFolders, findCompletedUploadFile, getDriveAccessToken } from "../server/google-drive.js";
+import { handleError, json, methodNotAllowed, readJson } from "../server/http.js";
+import { requireUser } from "../server/supabase-admin.js";
 
 const MAX_ORIGINAL_BYTES = 30 * 1024 * 1024;
 const MAX_PREVIEW_BYTES = 2 * 1024 * 1024;

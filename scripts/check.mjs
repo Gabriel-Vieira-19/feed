@@ -15,6 +15,12 @@ function walk(dir) {
 }
 
 const files = walk(root);
+
+const apiFunctionFiles = fs.readdirSync(path.join(root, "api"), { withFileTypes: true })
+  .filter(entry => entry.isFile() && /\.(?:js|mjs|ts)$/.test(entry.name));
+if (apiFunctionFiles.length > 12) {
+  errors.push(`Limite Vercel Hobby excedido: ${apiFunctionFiles.length} Serverless Functions em api/ (máximo 12).`);
+}
 const jsFiles = files.filter(file => file.endsWith(".js") || file.endsWith(".mjs"));
 
 for (const file of jsFiles) {
@@ -61,6 +67,9 @@ const required = [
   "api/admin-photo-action.js",
   "api/admin-private-originals.js",
   "api/cleanup-abandoned.js",
+  "server/http.js",
+  "server/supabase-admin.js",
+  "server/google-drive.js",
   "supabase/schema.sql",
   "src/lib/drive.js",
   "src/lib/pending-upload.js",

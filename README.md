@@ -119,7 +119,6 @@ Resumo:
 ```text
 pedro-momentos-google-drive-final/
 ├── api/
-│   ├── _lib/
 │   ├── admin-dashboard.js
 │   ├── admin-drive-auth.js
 │   ├── admin-drive-callback.js
@@ -129,10 +128,13 @@ pedro-momentos-google-drive-final/
 │   ├── cleanup-abandoned.js
 │   ├── drive-upload-proxy.js
 │   ├── drive-upload-session.js
-│   ├── health.js
 │   ├── media.js
 │   ├── original-chunk.js
 │   └── photo-publish.js
+├── server/
+│   ├── google-drive.js
+│   ├── http.js
+│   └── supabase-admin.js
 ├── docs/
 ├── public/
 ├── scripts/

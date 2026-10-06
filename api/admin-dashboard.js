@@ -1,5 +1,5 @@
-import { handleError, json, methodNotAllowed, requireAdmin } from "./_lib/http.js";
-import { getAdminSupabase } from "./_lib/supabase-admin.js";
+import { handleError, json, methodNotAllowed, requireAdmin } from "../server/http.js";
+import { getAdminSupabase } from "../server/supabase-admin.js";
 
 async function exactCount(table, filter = null) {
   let query = getAdminSupabase().from(table).select("*", { count: "exact", head: true });
