@@ -28,40 +28,23 @@ const app = document.querySelector("#app");
 
 
 /* =========================================================
-   PROTEÇÃO CONTRA CAPTURAS CASUAIS — FRONTEND APENAS
-   Não cria nenhuma função serverless na Vercel.
+   PROTEÇÃO DE PRIVACIDADE CONTRA CAPTURAS CASUAIS
+   FRONTEND APENAS — NÃO CRIA SERVERLESS FUNCTION
+
+   Observação importante:
+   navegadores não recebem um evento confiável de "screenshot".
+   A estratégia abaixo reage imediatamente quando a página perde
+   foco/visibilidade (como costuma acontecer com ferramentas de
+   recorte) e ao PrintScreen quando a tecla chega ao navegador.
 ========================================================= */
 
 const CAPTURE_SHIELD_ID = "capture-protection-shield";
-const CAPTURE_WATERMARK_ID = "capture-protection-watermark";
 
-let captureViewerName = "Convidado";
-let captureEventLabel = "PEDRO 18";
 let captureHideTimer = null;
 let captureProtectionInitialized = false;
 
-function cleanCaptureLabel(value, fallback) {
-  const text = String(value || "").replace(/\s+/g, " ").trim();
-  return text || fallback;
-}
-
 function getCaptureShield() {
   return document.getElementById(CAPTURE_SHIELD_ID);
-}
-
-function getCaptureWatermark() {
-  return document.getElementById(CAPTURE_WATERMARK_ID);
-}
-
-function renderCaptureWatermark() {
-  const root = getCaptureWatermark();
-  if (!root) return;
-
-  const label = `${captureEventLabel} • ${captureViewerName}`;
-  root.setAttribute("aria-label", `Marca d'água: ${label}`);
-  root.innerHTML = Array.from({ length: 18 }, () => (
-    `<span aria-hidden="true">${escapeHtml(label)}</span>`
-  )).join("");
 }
 
 function showCaptureShield(reason = "protected") {
@@ -75,7 +58,7 @@ function showCaptureShield(reason = "protected") {
   document.documentElement.classList.add("capture-protection-active");
 }
 
-function hideCaptureShield(delay = 120) {
+function hideCaptureShield(delay = 180) {
   window.clearTimeout(captureHideTimer);
 
   captureHideTimer = window.setTimeout(() => {
@@ -87,83 +70,61 @@ function hideCaptureShield(delay = 120) {
   }, delay);
 }
 
-function flashCaptureShield(reason = "capture") {
+function flashCaptureShield(reason = "capture", duration = 1400) {
   showCaptureShield(reason);
-  hideCaptureShield(1100);
+  hideCaptureShield(duration);
 }
 
 function ensureCaptureProtectionUi() {
-  if (!document.body) return;
+  if (!document.body || getCaptureShield()) return;
 
-  if (!getCaptureWatermark()) {
-    const watermark = document.createElement("div");
-    watermark.id = CAPTURE_WATERMARK_ID;
-    watermark.className = "capture-protection-watermark";
-    watermark.setAttribute("aria-hidden", "true");
-    document.body.appendChild(watermark);
-  }
-
-  if (!getCaptureShield()) {
-    const shield = document.createElement("div");
-    shield.id = CAPTURE_SHIELD_ID;
-    shield.className = "capture-protection-shield";
-    shield.setAttribute("aria-hidden", "true");
-    shield.innerHTML = `
-      <div class="capture-protection-card">
-        <strong>Conteúdo protegido</strong>
-        <span>Volte para a página para continuar.</span>
-      </div>`;
-    document.body.appendChild(shield);
-  }
-
-  renderCaptureWatermark();
+  const shield = document.createElement("div");
+  shield.id = CAPTURE_SHIELD_ID;
+  shield.className = "capture-protection-shield";
+  shield.setAttribute("aria-hidden", "true");
+  document.body.appendChild(shield);
 }
 
-function setScreenshotWatermarkName(name) {
-  captureViewerName = cleanCaptureLabel(name, "Convidado");
-  renderCaptureWatermark();
-}
-
-function initializeScreenshotProtection(options = {}) {
-  captureViewerName = cleanCaptureLabel(options.viewerName, captureViewerName);
-  captureEventLabel = cleanCaptureLabel(options.eventLabel, captureEventLabel);
-
-  if (captureProtectionInitialized) {
-    renderCaptureWatermark();
-    return;
-  }
+function initializeScreenshotProtection() {
+  if (captureProtectionInitialized) return;
 
   captureProtectionInitialized = true;
   ensureCaptureProtectionUi();
 
-  window.addEventListener("blur", () => showCaptureShield("blur"), true);
-  window.addEventListener("focus", () => hideCaptureShield(), true);
+  // Ferramentas de recorte do sistema normalmente tiram o foco da janela.
+  // A classe é aplicada sem transição para borrar o conteúdo imediatamente.
+  window.addEventListener("blur", () => showCaptureShield("window-blur"), true);
+  window.addEventListener("focus", () => hideCaptureShield(220), true);
 
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) {
-      showCaptureShield("visibility");
+      showCaptureShield("hidden");
     } else if (document.hasFocus()) {
-      hideCaptureShield();
+      hideCaptureShield(220);
     }
   }, true);
+
+  // Ajuda em navegação para outro app/tela e em alguns navegadores móveis.
+  window.addEventListener("pagehide", () => showCaptureShield("pagehide"), true);
+
+  // Quando o navegador recebe PrintScreen, borra imediatamente e mantém
+  // a proteção por um curto período. O SO pode interceptar a tecla antes;
+  // por isso a perda de foco acima é a camada principal.
+  const handlePrintScreen = event => {
+    if (event.key === "PrintScreen") {
+      flashCaptureShield("printscreen", 1600);
+    }
+  };
+
+  document.addEventListener("keydown", handlePrintScreen, true);
+  document.addEventListener("keyup", handlePrintScreen, true);
 
   document.addEventListener("keydown", event => {
     const key = String(event.key || "").toLowerCase();
 
-    if (event.key === "PrintScreen") {
-      flashCaptureShield("printscreen");
-      return;
-    }
-
     if ((event.ctrlKey || event.metaKey) && key === "p") {
       event.preventDefault();
-      flashCaptureShield("print");
-    }
-  }, true);
-
-  document.addEventListener("keyup", event => {
-    if (event.key === "PrintScreen") {
-      flashCaptureShield("printscreen");
+      flashCaptureShield("print", 1600);
     }
   }, true);
 
@@ -180,7 +141,7 @@ function initializeScreenshotProtection(options = {}) {
   });
 
   window.addEventListener("beforeprint", () => showCaptureShield("print"), true);
-  window.addEventListener("afterprint", () => hideCaptureShield(), true);
+  window.addEventListener("afterprint", () => hideCaptureShield(220), true);
 
   if (document.hidden || !document.hasFocus()) {
     showCaptureShield("initial");
@@ -255,7 +216,6 @@ function getStoredName() {
 function storeName(name) {
   const normalized = normalizeName(name);
   localStorage.setItem("party_display_name", normalized);
-  setScreenshotWatermarkName(normalized);
 }
 
 function renderOnboarding(prefill = "") {
@@ -1016,10 +976,7 @@ function renderDriveAdmin() {
   if (connectedParam && savedKey) loadDashboard();
 }
 
-initializeScreenshotProtection({
-  viewerName: getStoredName(),
-  eventLabel: config.eventTitle,
-});
+initializeScreenshotProtection();
 
 if (new URLSearchParams(location.search).get("admin") === "drive") {
   renderDriveAdmin();
