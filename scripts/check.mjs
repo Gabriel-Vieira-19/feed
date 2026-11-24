@@ -92,3 +92,6 @@ if (errors.length) {
 }
 
 console.log(`OK — ${jsFiles.length} arquivos JS verificados; sem referências antigas e sem segredos no frontend.`);
+
+const cameraTests = spawnSync(process.execPath, ["--test", path.join(root, "scripts/camera.test.mjs")], { stdio: "inherit" });
+if (cameraTests.status !== 0) process.exit(cameraTests.status || 1);
