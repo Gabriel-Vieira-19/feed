@@ -10,6 +10,7 @@ import {
   subscribeToPhotoChanges,
 } from "./lib/supabase.js";
 import { clearUploadRecovery, downloadOriginalPhoto, uploadPhotoToDrive } from "./lib/drive.js";
+import { Camera } from "./lib/Camera.js";
 import {
   clearPendingCapture,
   loadPendingCapture,
@@ -25,6 +26,7 @@ import {
 } from "./lib/utils.js";
 
 const app = document.querySelector("#app");
+let activeCamera;
 
 
 /* =========================================================
@@ -299,7 +301,6 @@ function renderApp() {
         <section id="view-camera" class="view" data-view="camera">
           <div class="section-heading"><div><h2>Tirar uma foto</h2><p>Use a câmera do celular. Nesta versão, somente fotos tiradas durante a festa podem ser publicadas.</p></div></div>
           <div class="capture-wrap"><div id="camera-card" class="camera-card"></div></div>
-          <input id="camera-input" class="file-input" type="file" accept="image/*" capture="environment" />
         </section>
 
         <section id="view-mine" class="view" data-view="mine">
@@ -334,7 +335,6 @@ function bindAppEvents() {
   document.querySelectorAll("[data-nav]").forEach(button => {
     button.addEventListener("click", () => switchView(button.dataset.nav));
   });
-  document.querySelector("#camera-input").addEventListener("change", handleFileInput);
   document.querySelector("#load-more").addEventListener("click", () => loadFeedPage(false));
   document.querySelector("#mine-load-more").addEventListener("click", () => loadMinePage(false));
   document.querySelector("#profile-pill").addEventListener("click", editDisplayName);
@@ -348,6 +348,10 @@ function bindAppEvents() {
   });
   window.addEventListener("online", updateConnectionBanner);
   window.addEventListener("offline", updateConnectionBanner);
+  window.addEventListener("pagehide", closeCamera);
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) closeCamera();
+  });
 }
 
 function updateConnectionBanner() {
@@ -358,6 +362,7 @@ function updateConnectionBanner() {
 }
 
 function switchView(view) {
+  if (view !== "camera") closeCamera();
   state.view = view;
   document.querySelectorAll(".view").forEach(el => el.classList.toggle("active", el.dataset.view === view));
   document.querySelectorAll("[data-nav]").forEach(el => el.classList.toggle("active", el.dataset.nav === view));
@@ -380,21 +385,50 @@ function renderCameraEmpty() {
       <button id="take-photo" class="btn btn-primary" type="button">ABRIR CÂMERA</button>
       <button id="go-feed" class="btn btn-secondary" type="button">VER FEED</button>
     </div>`;
-  document.querySelector("#take-photo").onclick = () => document.querySelector("#camera-input").click();
+  document.querySelector("#take-photo").onclick = openCamera;
   document.querySelector("#go-feed").onclick = () => switchView("feed");
 }
 
-async function handleFileInput(event) {
-  const file = event.target.files?.[0];
-  event.target.value = "";
-  if (!file) return;
-  if (!file.type.startsWith("image/")) return toast("A câmera não retornou uma imagem válida.", "error");
-  if (file.size > config.maxPhotoBytes) return toast("Essa foto ultrapassa 30 MB.", "error");
+async function openCamera() {
+  if (activeCamera || state.view !== "camera") return;
+  let camera;
+  try {
+    camera = new Camera(document.querySelector("#camera-card"), {
+      onCapture: acceptCameraPhoto,
+      onClose: closeCamera,
+      onError: message => toast(message, "error"),
+    });
+    activeCamera = camera;
+    await camera.open();
+  } catch (error) {
+    if (camera && activeCamera !== camera) return;
+    closeCamera();
+    if (!camera) renderCameraEmpty();
+    toast(error.name === "NotAllowedError"
+      ? "Permita o uso da câmera no navegador para tirar uma foto."
+      : error.message || "Não foi possível abrir a câmera.", "error");
+  }
+}
+
+function closeCamera() {
+  if (!activeCamera) return;
+  activeCamera.dispose();
+  activeCamera = null;
+  if (!state.selectedFile) renderCameraEmpty();
+}
+
+async function acceptCameraPhoto(file) {
+  if (!file.type.startsWith("image/") || file.size > config.maxPhotoBytes) {
+    toast(file.size > config.maxPhotoBytes ? "Essa foto ultrapassa 30 MB." : "A câmera não retornou uma imagem válida.", "error");
+    return false;
+  }
 
   if (state.selectedFile) clearUploadRecovery(state.selectedFile);
-  await clearSelectedFile(true);
+  const clearingPending = clearSelectedFile(true);
   state.selectedFile = file;
   state.selectedUrl = URL.createObjectURL(file);
+  closeCamera();
+  await clearingPending;
   await savePendingCapture(file);
   renderPhotoPreview();
 }
@@ -417,7 +451,7 @@ function renderPhotoPreview() {
     if (state.selectedFile) clearUploadRecovery(state.selectedFile);
     await clearSelectedFile(true);
     renderCameraEmpty();
-    document.querySelector("#camera-input").click();
+    openCamera();
   };
 }
 
@@ -485,9 +519,10 @@ async function clearSelectedFile(removePending = false) {
 async function restorePendingPhoto() {
   if (state.selectedFile) return;
   const file = await loadPendingCapture();
-  if (!file || file.size > config.maxPhotoBytes || !file.type.startsWith("image/")) return;
+  if (state.selectedFile || !file || file.size > config.maxPhotoBytes || !file.type.startsWith("image/")) return;
   state.selectedFile = file;
   state.selectedUrl = URL.createObjectURL(file);
+  closeCamera();
   renderPhotoPreview();
   toast("Encontramos uma foto que ainda não terminou de ser publicada. Abra a Câmera para continuar.", "success", 5200);
 }
