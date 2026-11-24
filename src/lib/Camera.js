@@ -131,9 +131,13 @@ export class Camera {
 
   async switchCamera() {
     const previous = this.facing;
+    const previousDeviceId = this.stream?.getVideoTracks()[0]?.getSettings().deviceId;
     try {
       await this.open(previous === "user" ? "environment" : "user");
-      if (!this.disposed && this.facing === previous) this.onError("Outra câmera não está disponível.");
+      if (this.disposed) return;
+      const deviceId = this.stream?.getVideoTracks()[0]?.getSettings().deviceId;
+      if (previousDeviceId && deviceId === previousDeviceId) this.facing = previous;
+      if (this.facing === previous) this.onError("Outra câmera não está disponível.");
     } catch {
       if (this.disposed) return;
       this.onError("Não foi possível alternar a câmera.");

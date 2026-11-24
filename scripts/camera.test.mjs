@@ -1,8 +1,32 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { compositePhoto } from "../src/lib/Camera.js";
+import { Camera, compositePhoto } from "../src/lib/Camera.js";
 import { FaceFilterEngine } from "../src/lib/FaceFilterEngine.js";
 import { BufferAttribute, Group, PerspectiveCamera, Vector3 } from "three";
+
+test("switching preserves mirroring when the browser returns the same camera without facingMode", async () => {
+  const stream = deviceId => ({ getVideoTracks: () => [{ getSettings: () => ({ deviceId }) }] });
+  for (const [originalId, nextId, facing, warnings] of [
+    ["rear", "rear", "environment", ["Outra câmera não está disponível."]],
+    ["rear", "front", "user", []],
+    [undefined, undefined, "user", []],
+  ]) {
+    const errors = [];
+    const camera = Object.assign(Object.create(Camera.prototype), {
+      facing: "environment",
+      stream: stream(originalId),
+      async open(requested) {
+        this.stream = stream(nextId);
+        this.facing = requested;
+      },
+      onError: message => errors.push(message),
+    });
+
+    await camera.switchCamera();
+    assert.equal(camera.facing, facing);
+    assert.deepEqual(errors, warnings);
+  }
+});
 
 test("capture encodes both layers at native size using a shared front-camera mirror", async () => {
   const color = {};
